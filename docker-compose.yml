@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Spring Boot Application with Java 25
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eventticket-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_ENDPOINT_OVERRIDE=http://localstack:4566
+      - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
+      - AWS_SQS_ENDPOINT=http://localstack:4566
+      - LOCALSTACK_HOSTNAME=localstack
+    depends_on:
+      localstack:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - eventticket-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # LocalStack - AWS Services Emulator (DynamoDB, SQS)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: eventticket-localstack
+    ports:
+      - "4566:4566"            # LocalStack Gateway (all services)
+      - "4510-4559:4510-4559"  # External services
+    environment:
+      - SERVICES=dynamodb,sqs
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - PERSISTENCE=1
+    volumes:
+      - localstack_data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./init-scripts:/etc/localstack/init/ready.d:ro
+    networks:
+      - eventticket-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis - Distributed Cache for High Performance
+  redis:
+    image: redis:7-alpine
+    container_name: eventticket-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eventticket-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  localstack_data:
+    driver: local
+    name: eventticket-localstack-data
+  redis_data:
+    driver: local
+    name: eventticket-redis-data
+
+networks:
+  eventticket-network:
+    driver: bridge
