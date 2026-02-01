@@ -1,21 +1,17 @@
 package com.eventticket.domain.valueobject;
 
-import lombok.Value;
-
 import java.util.UUID;
 
 /**
  * Value object representing a reservation identifier.
+ * Using Java Record for immutability.
  */
-@Value
-public class ReservationId {
-    String value;
-
-    private ReservationId(String value) {
+public record ReservationId(String value) {
+    
+    public ReservationId {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("ReservationId cannot be null or empty");
         }
-        this.value = value;
     }
 
     public static ReservationId of(String value) {

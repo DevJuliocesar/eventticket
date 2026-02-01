@@ -6,8 +6,8 @@ import com.eventticket.application.usecase.ConfirmTicketOrderUseCase;
 import com.eventticket.application.usecase.CreateTicketOrderUseCase;
 import com.eventticket.application.usecase.GetTicketOrderUseCase;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -16,16 +16,27 @@ import reactor.core.publisher.Mono;
 /**
  * REST controller for ticket order operations.
  * Implements the Adapter pattern (Hexagonal Architecture).
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/orders")
-@RequiredArgsConstructor
 public class TicketOrderController {
+
+    private static final Logger log = LoggerFactory.getLogger(TicketOrderController.class);
 
     private final CreateTicketOrderUseCase createOrderUseCase;
     private final ConfirmTicketOrderUseCase confirmOrderUseCase;
     private final GetTicketOrderUseCase getOrderUseCase;
+
+    public TicketOrderController(
+            CreateTicketOrderUseCase createOrderUseCase,
+            ConfirmTicketOrderUseCase confirmOrderUseCase,
+            GetTicketOrderUseCase getOrderUseCase
+    ) {
+        this.createOrderUseCase = createOrderUseCase;
+        this.confirmOrderUseCase = confirmOrderUseCase;
+        this.getOrderUseCase = getOrderUseCase;
+    }
 
     /**
      * Creates a new ticket order.

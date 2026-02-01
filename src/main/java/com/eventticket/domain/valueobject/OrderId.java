@@ -1,21 +1,17 @@
 package com.eventticket.domain.valueobject;
 
-import lombok.Value;
-
 import java.util.UUID;
 
 /**
  * Value object representing an order identifier.
+ * Using Java Record for immutability and automatic equals/hashCode/toString.
  */
-@Value
-public class OrderId {
-    String value;
-
-    private OrderId(String value) {
+public record OrderId(String value) {
+    
+    public OrderId {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("OrderId cannot be null or empty");
         }
-        this.value = value;
     }
 
     public static OrderId of(String value) {

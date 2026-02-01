@@ -14,5 +14,8 @@ aws:
 logging:
   level:
     root: INFO
-    com.eventticket: INFO
-    org.springframework.web: INFO
+    com.eventticket: DEBUG
+    org.springframework.web: DEBUG
+    software.amazon.awssdk: DEBUG
+    software.amazon.awssdk.services.sqs: DEBUG
+    software.amazon.awssdk.services.dynamodb: DEBUG

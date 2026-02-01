@@ -4,10 +4,9 @@ import com.eventticket.domain.model.ReservationStatus;
 import com.eventticket.domain.model.TicketReservation;
 import com.eventticket.domain.repository.EventRepository;
 import com.eventticket.domain.repository.TicketReservationRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -15,14 +14,23 @@ import java.time.Instant;
 /**
  * Use case for releasing expired reservations.
  * Functional Requirement #6: Automatic release of expired reservations.
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ReleaseExpiredReservationsUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(ReleaseExpiredReservationsUseCase.class);
 
     private final TicketReservationRepository reservationRepository;
     private final EventRepository eventRepository;
+
+    public ReleaseExpiredReservationsUseCase(
+            TicketReservationRepository reservationRepository,
+            EventRepository eventRepository
+    ) {
+        this.reservationRepository = reservationRepository;
+        this.eventRepository = eventRepository;
+    }
 
     /**
      * Executes the release expired reservations use case.

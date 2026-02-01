@@ -4,21 +4,26 @@ import com.eventticket.application.dto.OrderResponse;
 import com.eventticket.domain.exception.OrderNotFoundException;
 import com.eventticket.domain.repository.TicketOrderRepository;
 import com.eventticket.domain.valueobject.OrderId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 /**
  * Use case for retrieving a ticket order.
  * Query use case following CQRS pattern.
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class GetTicketOrderUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(GetTicketOrderUseCase.class);
+
     private final TicketOrderRepository orderRepository;
+
+    public GetTicketOrderUseCase(TicketOrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
 
     /**
      * Executes the get order use case.

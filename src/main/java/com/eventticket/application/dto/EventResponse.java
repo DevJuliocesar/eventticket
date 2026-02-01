@@ -2,14 +2,13 @@ package com.eventticket.application.dto;
 
 import com.eventticket.domain.model.Event;
 import com.eventticket.domain.model.EventStatus;
-import lombok.Builder;
 
 import java.time.Instant;
 
 /**
  * Data Transfer Object for event response.
+ * Pure Java Record - Java 25 features.
  */
-@Builder
 public record EventResponse(
         String eventId,
         String name,
@@ -31,19 +30,19 @@ public record EventResponse(
      * @return EventResponse DTO
      */
     public static EventResponse fromDomain(Event event) {
-        return EventResponse.builder()
-                .eventId(event.getEventId().getValue())
-                .name(event.getName())
-                .description(event.getDescription())
-                .venue(event.getVenue())
-                .eventDate(event.getEventDate())
-                .totalCapacity(event.getTotalCapacity())
-                .availableTickets(event.getAvailableTickets())
-                .reservedTickets(event.getReservedTickets())
-                .soldTickets(event.getSoldTickets())
-                .status(event.getStatus())
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .build();
+        return new EventResponse(
+                event.getEventId().value(),
+                event.getName(),
+                event.getDescription(),
+                event.getVenue(),
+                event.getEventDate(),
+                event.getTotalCapacity(),
+                event.getAvailableTickets(),
+                event.getReservedTickets(),
+                event.getSoldTickets(),
+                event.getStatus(),
+                event.getCreatedAt(),
+                event.getUpdatedAt()
+        );
     }
 }

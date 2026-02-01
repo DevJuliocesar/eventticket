@@ -2,8 +2,10 @@ package com.eventticket.infrastructure.api;
 
 import com.eventticket.domain.exception.DomainException;
 import com.eventticket.domain.exception.InsufficientInventoryException;
+import com.eventticket.domain.exception.InvalidTicketStateTransitionException;
 import com.eventticket.domain.exception.OrderNotFoundException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -19,10 +21,12 @@ import java.util.Map;
 /**
  * Global exception handler for the REST API.
  * Centralizes error handling following the DRY principle.
+ * Using Java 25 Records for response DTOs.
  */
-@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(OrderNotFoundException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleOrderNotFoundException(OrderNotFoundException ex) {
@@ -50,6 +54,20 @@ public class GlobalExceptionHandler {
                 )));
     }
 
+    @ExceptionHandler(InvalidTicketStateTransitionException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleInvalidTicketStateTransitionException(
+            InvalidTicketStateTransitionException ex
+    ) {
+        log.warn("Invalid ticket state transition: {}", ex.getMessage());
+        return Mono.just(ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Invalid ticket state transition",
+                        ex.getMessage()
+                )));
+    }
+
     @ExceptionHandler(DomainException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleDomainException(DomainException ex) {
         log.error("Domain exception: {}", ex.getMessage(), ex);
@@ -70,9 +88,10 @@ public class GlobalExceptionHandler {
         Map<String, String> errors = new HashMap<>();
         
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            if (error instanceof FieldError fieldError) {
+                // Java 25 Pattern Matching for instanceof
+                errors.put(fieldError.getField(), error.getDefaultMessage());
+            }
         });
 
         return Mono.just(ResponseEntity
@@ -108,6 +127,9 @@ public class GlobalExceptionHandler {
                 )));
     }
 
+    /**
+     * Error response record - Java 25 style.
+     */
     public record ErrorResponse(
             int status,
             String error,
@@ -119,6 +141,9 @@ public class GlobalExceptionHandler {
         }
     }
 
+    /**
+     * Validation error response record - Java 25 style.
+     */
     public record ValidationErrorResponse(
             int status,
             String error,

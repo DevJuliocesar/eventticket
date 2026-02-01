@@ -4,10 +4,12 @@ target/
 .gitignore
 *.md
 *.log
-.mvn/wrapper/maven-wrapper.jar
 .idea/
 *.iml
 .vscode/
 node_modules/
 *.class
 .DS_Store
+.mvn/
+mvnw
+mvnw.cmd

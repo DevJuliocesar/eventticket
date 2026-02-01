@@ -6,6 +6,11 @@ spring:
     web-application-type: reactive
     banner-mode: console
   
+  # Java 25 Virtual Threads configuration
+  threads:
+    virtual:
+      enabled: true
+  
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
@@ -66,6 +71,9 @@ logging:
     com.eventticket: DEBUG
     org.springframework.web: DEBUG
     reactor.netty: INFO
+    # software.amazon.awssdk: DEBUG
+    # software.amazon.awssdk.services.sqs: DEBUG
+    # software.amazon.awssdk.services.dynamodb: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -73,7 +81,10 @@ logging:
 # Application Configuration
 application:
   reservation:
-    timeout-minutes: 15
+    timeout-minutes: 10
     check-interval-ms: 60000  # Check every minute for expired reservations
   inventory:
     max-retry-attempts: 3
+  sqs:
+    order-queue-url: ticket-order-queue
+    poll-interval-ms: 5000  # Poll queue every 5 seconds

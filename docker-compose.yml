@@ -9,6 +9,7 @@ services:
     container_name: eventticket-app
     ports:
       - "8080:8080"
+      - "5005:5005"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATA_REDIS_HOST=redis
@@ -20,6 +21,7 @@ services:
       - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
       - AWS_SQS_ENDPOINT=http://localstack:4566
       - LOCALSTACK_HOSTNAME=localstack
+      - JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     depends_on:
       localstack:
         condition: service_healthy
@@ -28,12 +30,19 @@ services:
     networks:
       - eventticket-network
     restart: unless-stopped
+    # Hot reload: Mount configuration files for instant updates
+    # This allows changes to application.yml without rebuilding
+    volumes:
+      # Mount resources directory - Spring Boot will read from here
+      - ./src/main/resources:/app/resources:ro
+      # Alternative: Mount to classpath location (requires JAR extraction)
+      # - ./src/main/resources:/app/BOOT-INF/classes:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 40s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # LocalStack - AWS Services Emulator (DynamoDB, SQS)
   localstack:
@@ -45,14 +54,14 @@ services:
     environment:
       - SERVICES=dynamodb,sqs
       - DEBUG=1
-      - DATA_DIR=/tmp/localstack/data
+      - DATA_DIR=/var/lib/localstack/data
       - DOCKER_HOST=unix:///var/run/docker.sock
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - PERSISTENCE=1
     volumes:
-      - localstack_data:/tmp/localstack
+      - localstack_data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
       - ./init-scripts:/etc/localstack/init/ready.d:ro
     networks:

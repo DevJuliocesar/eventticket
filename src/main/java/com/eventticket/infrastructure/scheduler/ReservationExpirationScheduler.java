@@ -1,21 +1,26 @@
 package com.eventticket.infrastructure.scheduler;
 
 import com.eventticket.application.usecase.ReleaseExpiredReservationsUseCase;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
  * Scheduler for automatic release of expired reservations.
  * Functional Requirement #6: Automatic release of expired reservations.
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class ReservationExpirationScheduler {
 
+    private static final Logger log = LoggerFactory.getLogger(ReservationExpirationScheduler.class);
+
     private final ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase;
+
+    public ReservationExpirationScheduler(ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase) {
+        this.releaseExpiredReservationsUseCase = releaseExpiredReservationsUseCase;
+    }
 
     /**
      * Releases expired reservations every minute.

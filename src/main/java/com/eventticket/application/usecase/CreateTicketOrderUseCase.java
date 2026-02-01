@@ -12,31 +12,51 @@ import com.eventticket.domain.repository.TicketReservationRepository;
 import com.eventticket.domain.valueobject.CustomerId;
 import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.Money;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.eventticket.infrastructure.messaging.OrderMessage;
+import com.eventticket.infrastructure.messaging.SqsOrderPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * Use case for creating a ticket order.
  * Implements the Command pattern and orchestrates the order creation flow.
+ * Functional Requirement #3: Asynchronous order processing.
+ * Creates order, reserves tickets, and enqueues to SQS for async processing.
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class CreateTicketOrderUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(CreateTicketOrderUseCase.class);
 
     private final TicketOrderRepository orderRepository;
     private final TicketInventoryRepository inventoryRepository;
     private final TicketReservationRepository reservationRepository;
+    private final SqsOrderPublisher sqsOrderPublisher;
+
+    public CreateTicketOrderUseCase(
+            TicketOrderRepository orderRepository,
+            TicketInventoryRepository inventoryRepository,
+            TicketReservationRepository reservationRepository,
+            SqsOrderPublisher sqsOrderPublisher
+    ) {
+        this.orderRepository = orderRepository;
+        this.inventoryRepository = inventoryRepository;
+        this.reservationRepository = reservationRepository;
+        this.sqsOrderPublisher = sqsOrderPublisher;
+    }
 
     /**
      * Executes the create order use case.
+     * Functional Requirement #3: Returns orderId immediately and enqueues for async processing.
      *
      * @param request Order creation request
-     * @return Created order response
+     * @return Created order response (returns immediately)
      */
     public Mono<OrderResponse> execute(CreateOrderRequest request) {
         log.info("Creating ticket order for customer: {}", request.customerId());
@@ -49,8 +69,21 @@ public class CreateTicketOrderUseCase {
                 .flatMap(inventory -> createOrder(customerId, eventId, request, inventory))
                 .flatMap(order -> createReservation(order, request.ticketType(), request.quantity())
                         .thenReturn(order))
+                .flatMap(order -> {
+                    // Enqueue order to SQS for asynchronous processing
+                    OrderMessage message = OrderMessage.of(
+                            order.getOrderId(),
+                            order.getEventId().value(),
+                            order.getCustomerId().value(),
+                            request.ticketType(),
+                            request.quantity()
+                    );
+                    return sqsOrderPublisher.publishOrder(message)
+                            .thenReturn(order);
+                })
                 .map(OrderResponse::fromDomain)
-                .doOnSuccess(response -> log.info("Order created successfully: {}", response.orderId()))
+                .doOnSuccess(response -> log.info(
+                        "Order created and enqueued successfully: {}", response.orderId()))
                 .doOnError(error -> log.error("Error creating order", error));
     }
 
@@ -61,10 +94,10 @@ public class CreateTicketOrderUseCase {
     ) {
         return inventoryRepository.findByEventIdAndTicketType(eventId, ticketType)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(
-                        "Inventory not found for event: " + eventId + " and ticket type: " + ticketType)))
+                        "Inventory not found for event: %s and ticket type: %s".formatted(eventId, ticketType))))
                 .filter(inventory -> inventory.isAvailable(quantity))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(
-                        "Insufficient inventory. Available: " + quantity)));
+                        "Insufficient inventory. Requested: %d".formatted(quantity))));
     }
 
     private Mono<TicketInventory> reserveTickets(TicketInventory inventory, int quantity) {
@@ -91,12 +124,8 @@ public class CreateTicketOrderUseCase {
     }
 
     private List<TicketItem> createTicketItems(String ticketType, int quantity, Money price) {
-        return java.util.stream.IntStream.range(0, quantity)
-                .mapToObj(i -> TicketItem.create(
-                        ticketType,
-                        generateSeatNumber(i),
-                        price
-                ))
+        return IntStream.range(0, quantity)
+                .mapToObj(i -> TicketItem.create(ticketType, generateSeatNumber(i), price))
                 .toList();
     }
 
@@ -118,6 +147,6 @@ public class CreateTicketOrderUseCase {
     private String generateSeatNumber(int index) {
         char row = (char) ('A' + (index / 10));
         int seat = (index % 10) + 1;
-        return row + "-" + seat;
+        return "%c-%d".formatted(row, seat);
     }
 }

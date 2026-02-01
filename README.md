@@ -4,8 +4,13 @@ Ticket management and event processing system built with reactive architecture u
 
 ## 🚀 Technologies
 
-- **Java 25**: Modern language features (Records, Pattern Matching, Virtual Threads)
-- **Spring Boot 4.x**: Core framework
+- **Java 25**: Modern language features
+  - **Records**: Immutable data carriers for DTOs, Value Objects, and Audit entities
+  - **Pattern Matching**: Enhanced `instanceof` and `switch` expressions
+  - **Virtual Threads**: Lightweight threads for improved concurrency (enabled via Spring Boot)
+  - **Text Blocks & String Templates**: Clean multiline strings with `.formatted()`
+  - **Sealed Classes**: Restricted class hierarchies for domain modeling
+- **Spring Boot 4.0-M1**: Core framework with Java 25 support and Virtual Threads
 - **Spring WebFlux**: Non-blocking reactive API
 - **LocalStack**: Complete AWS services emulator
   - **DynamoDB**: Event Sourcing and data persistence

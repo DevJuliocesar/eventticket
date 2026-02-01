@@ -1,0 +1,21 @@
+version: '3.8'
+
+# Development configuration with hot reload
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  app:
+    # Override volumes for hot reload
+    volumes:
+      # Mount configuration files for hot reload
+      - ./src/main/resources:/app/BOOT-INF/classes:ro
+      # Mount compiled classes (requires mvn compile first)
+      - ./target/classes:/app/BOOT-INF/classes:rw
+      # Enable Spring DevTools file watcher
+      - /tmp:/tmp
+    environment:
+      # Enable Spring DevTools
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+    # Remove user restriction for volume mounting (development only)
+    user: root

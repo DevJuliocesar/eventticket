@@ -1,21 +1,17 @@
 package com.eventticket.domain.valueobject;
 
-import lombok.Value;
-
 import java.util.UUID;
 
 /**
  * Value object representing a customer identifier.
+ * Using Java Record for immutability.
  */
-@Value
-public class CustomerId {
-    String value;
-
-    private CustomerId(String value) {
+public record CustomerId(String value) {
+    
+    public CustomerId {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("CustomerId cannot be null or empty");
         }
-        this.value = value;
     }
 
     public static CustomerId of(String value) {

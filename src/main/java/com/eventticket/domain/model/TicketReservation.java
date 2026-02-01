@@ -3,41 +3,51 @@ package com.eventticket.domain.model;
 import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.OrderId;
 import com.eventticket.domain.valueobject.ReservationId;
-import lombok.Builder;
-import lombok.Value;
-import lombok.With;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 /**
  * Domain entity representing a temporary ticket reservation.
  * Reservations expire after a certain time period.
+ * Using Java 25 - immutable class with wither pattern.
  */
-@Value
-@Builder
-@With
-public class TicketReservation {
+public final class TicketReservation {
     
-    private static final int RESERVATION_TIMEOUT_MINUTES = 15;
+    private static final int RESERVATION_TIMEOUT_MINUTES = 10;
     
-    ReservationId reservationId;
-    OrderId orderId;
-    EventId eventId;
-    String ticketType;
-    int quantity;
-    ReservationStatus status;
-    Instant expiresAt;
-    Instant createdAt;
+    private final ReservationId reservationId;
+    private final OrderId orderId;
+    private final EventId eventId;
+    private final String ticketType;
+    private final int quantity;
+    private final ReservationStatus status;
+    private final Instant expiresAt;
+    private final Instant createdAt;
+
+    private TicketReservation(
+            ReservationId reservationId,
+            OrderId orderId,
+            EventId eventId,
+            String ticketType,
+            int quantity,
+            ReservationStatus status,
+            Instant expiresAt,
+            Instant createdAt
+    ) {
+        this.reservationId = Objects.requireNonNull(reservationId);
+        this.orderId = Objects.requireNonNull(orderId);
+        this.eventId = Objects.requireNonNull(eventId);
+        this.ticketType = Objects.requireNonNull(ticketType);
+        this.quantity = quantity;
+        this.status = Objects.requireNonNull(status);
+        this.expiresAt = Objects.requireNonNull(expiresAt);
+        this.createdAt = Objects.requireNonNull(createdAt);
+    }
 
     /**
      * Creates a new ticket reservation.
-     *
-     * @param orderId Order identifier
-     * @param eventId Event identifier
-     * @param ticketType Type of ticket
-     * @param quantity Number of tickets
-     * @return A new TicketReservation instance
      */
     public static TicketReservation create(
             OrderId orderId,
@@ -48,22 +58,20 @@ public class TicketReservation {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(RESERVATION_TIMEOUT_MINUTES, ChronoUnit.MINUTES);
         
-        return TicketReservation.builder()
-                .reservationId(ReservationId.generate())
-                .orderId(orderId)
-                .eventId(eventId)
-                .ticketType(ticketType)
-                .quantity(quantity)
-                .status(ReservationStatus.ACTIVE)
-                .expiresAt(expiresAt)
-                .createdAt(now)
-                .build();
+        return new TicketReservation(
+                ReservationId.generate(),
+                orderId,
+                eventId,
+                ticketType,
+                quantity,
+                ReservationStatus.ACTIVE,
+                expiresAt,
+                now
+        );
     }
 
     /**
      * Confirms the reservation.
-     *
-     * @return Updated reservation with confirmed status
      */
     public TicketReservation confirm() {
         if (status != ReservationStatus.ACTIVE) {
@@ -72,37 +80,34 @@ public class TicketReservation {
         if (isExpired()) {
             throw new IllegalStateException("Cannot confirm expired reservation");
         }
-        return this.withStatus(ReservationStatus.CONFIRMED);
+        return new TicketReservation(reservationId, orderId, eventId, ticketType,
+                quantity, ReservationStatus.CONFIRMED, expiresAt, createdAt);
     }
 
     /**
      * Releases the reservation.
-     *
-     * @return Updated reservation with released status
      */
     public TicketReservation release() {
         if (status == ReservationStatus.CONFIRMED) {
             throw new IllegalStateException("Cannot release confirmed reservation");
         }
-        return this.withStatus(ReservationStatus.RELEASED);
+        return new TicketReservation(reservationId, orderId, eventId, ticketType,
+                quantity, ReservationStatus.RELEASED, expiresAt, createdAt);
     }
 
     /**
      * Marks the reservation as expired.
-     *
-     * @return Updated reservation with expired status
      */
     public TicketReservation expire() {
         if (status != ReservationStatus.ACTIVE) {
             throw new IllegalStateException("Only active reservations can expire");
         }
-        return this.withStatus(ReservationStatus.EXPIRED);
+        return new TicketReservation(reservationId, orderId, eventId, ticketType,
+                quantity, ReservationStatus.EXPIRED, expiresAt, createdAt);
     }
 
     /**
      * Checks if the reservation is expired.
-     *
-     * @return true if expired, false otherwise
      */
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
@@ -110,10 +115,34 @@ public class TicketReservation {
 
     /**
      * Checks if the reservation is active and not expired.
-     *
-     * @return true if active and not expired, false otherwise
      */
     public boolean isActiveAndValid() {
         return status == ReservationStatus.ACTIVE && !isExpired();
+    }
+
+    // Getters
+    public ReservationId getReservationId() { return reservationId; }
+    public OrderId getOrderId() { return orderId; }
+    public EventId getEventId() { return eventId; }
+    public String getTicketType() { return ticketType; }
+    public int getQuantity() { return quantity; }
+    public ReservationStatus getStatus() { return status; }
+    public Instant getExpiresAt() { return expiresAt; }
+    public Instant getCreatedAt() { return createdAt; }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof TicketReservation other && Objects.equals(reservationId, other.reservationId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(reservationId);
+    }
+
+    @Override
+    public String toString() {
+        return "TicketReservation[reservationId=%s, status=%s, eventId=%s]"
+                .formatted(reservationId, status, eventId);
     }
 }

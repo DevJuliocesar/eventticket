@@ -4,21 +4,26 @@ import com.eventticket.application.dto.EventAvailabilityResponse;
 import com.eventticket.domain.exception.OrderNotFoundException;
 import com.eventticket.domain.repository.EventRepository;
 import com.eventticket.domain.valueobject.EventId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 /**
  * Use case for querying real-time event ticket availability.
  * Functional Requirement #7: Reactive availability query.
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class GetEventAvailabilityUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(GetEventAvailabilityUseCase.class);
+
     private final EventRepository eventRepository;
+
+    public GetEventAvailabilityUseCase(EventRepository eventRepository) {
+        this.eventRepository = eventRepository;
+    }
 
     /**
      * Executes the get availability use case.

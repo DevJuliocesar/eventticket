@@ -6,22 +6,31 @@ import com.eventticket.domain.model.TicketOrder;
 import com.eventticket.domain.repository.TicketOrderRepository;
 import com.eventticket.domain.repository.TicketReservationRepository;
 import com.eventticket.domain.valueobject.OrderId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 /**
  * Use case for confirming a ticket order.
  * Follows the Single Responsibility Principle.
+ * Using Java 25 - constructor injection without Lombok.
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class ConfirmTicketOrderUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(ConfirmTicketOrderUseCase.class);
 
     private final TicketOrderRepository orderRepository;
     private final TicketReservationRepository reservationRepository;
+
+    public ConfirmTicketOrderUseCase(
+            TicketOrderRepository orderRepository,
+            TicketReservationRepository reservationRepository
+    ) {
+        this.orderRepository = orderRepository;
+        this.reservationRepository = reservationRepository;
+    }
 
     /**
      * Executes the confirm order use case.

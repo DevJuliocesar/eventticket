@@ -1,44 +1,63 @@
 package com.eventticket.domain.model;
 
 import com.eventticket.domain.valueobject.EventId;
-import lombok.Builder;
-import lombok.Value;
-import lombok.With;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Domain entity representing an event.
  * Aggregate root for event management.
+ * Using Java 25 - immutable class with wither pattern.
  */
-@Value
-@Builder
-@With
-public class Event {
+public final class Event {
     
-    EventId eventId;
-    String name;
-    String description;
-    String venue;
-    Instant eventDate;
-    int totalCapacity;
-    int availableTickets;
-    int reservedTickets;
-    int soldTickets;
-    EventStatus status;
-    Instant createdAt;
-    Instant updatedAt;
-    int version;
+    private final EventId eventId;
+    private final String name;
+    private final String description;
+    private final String venue;
+    private final Instant eventDate;
+    private final int totalCapacity;
+    private final int availableTickets;
+    private final int reservedTickets;
+    private final int soldTickets;
+    private final EventStatus status;
+    private final Instant createdAt;
+    private final Instant updatedAt;
+    private final int version;
+
+    private Event(
+            EventId eventId,
+            String name,
+            String description,
+            String venue,
+            Instant eventDate,
+            int totalCapacity,
+            int availableTickets,
+            int reservedTickets,
+            int soldTickets,
+            EventStatus status,
+            Instant createdAt,
+            Instant updatedAt,
+            int version
+    ) {
+        this.eventId = Objects.requireNonNull(eventId);
+        this.name = Objects.requireNonNull(name);
+        this.description = Objects.requireNonNull(description);
+        this.venue = Objects.requireNonNull(venue);
+        this.eventDate = Objects.requireNonNull(eventDate);
+        this.totalCapacity = totalCapacity;
+        this.availableTickets = availableTickets;
+        this.reservedTickets = reservedTickets;
+        this.soldTickets = soldTickets;
+        this.status = Objects.requireNonNull(status);
+        this.createdAt = Objects.requireNonNull(createdAt);
+        this.updatedAt = Objects.requireNonNull(updatedAt);
+        this.version = version;
+    }
 
     /**
      * Creates a new event.
-     *
-     * @param name Event name
-     * @param description Event description
-     * @param venue Event venue/location
-     * @param eventDate Event date and time
-     * @param totalCapacity Total ticket capacity
-     * @return A new Event instance
      */
     public static Event create(
             String name,
@@ -49,127 +68,121 @@ public class Event {
     ) {
         Instant now = Instant.now();
         
-        return Event.builder()
-                .eventId(EventId.generate())
-                .name(name)
-                .description(description)
-                .venue(venue)
-                .eventDate(eventDate)
-                .totalCapacity(totalCapacity)
-                .availableTickets(totalCapacity)
-                .reservedTickets(0)
-                .soldTickets(0)
-                .status(EventStatus.ACTIVE)
-                .createdAt(now)
-                .updatedAt(now)
-                .version(0)
-                .build();
+        return new Event(
+                EventId.generate(),
+                name,
+                description,
+                venue,
+                eventDate,
+                totalCapacity,
+                totalCapacity,
+                0,
+                0,
+                EventStatus.ACTIVE,
+                now,
+                now,
+                0
+        );
     }
 
     /**
      * Reserves tickets for this event.
-     *
-     * @param quantity Number of tickets to reserve
-     * @return Updated event with reserved tickets
      */
     public Event reserveTickets(int quantity) {
         if (availableTickets < quantity) {
             throw new IllegalStateException(
-                    "Not enough tickets available. Requested: " + quantity + 
-                    ", Available: " + availableTickets
+                    "Not enough tickets available. Requested: %d, Available: %d"
+                            .formatted(quantity, availableTickets)
             );
         }
         
-        return this
-                .withAvailableTickets(availableTickets - quantity)
-                .withReservedTickets(reservedTickets + quantity)
-                .withUpdatedAt(Instant.now())
-                .withVersion(version + 1);
+        return new Event(eventId, name, description, venue, eventDate, totalCapacity,
+                availableTickets - quantity, reservedTickets + quantity, soldTickets,
+                status, createdAt, Instant.now(), version + 1);
     }
 
     /**
      * Confirms reserved tickets (converts reservation to sold).
-     *
-     * @param quantity Number of tickets to confirm
-     * @return Updated event
      */
     public Event confirmReservedTickets(int quantity) {
         if (reservedTickets < quantity) {
             throw new IllegalStateException(
-                    "Not enough reserved tickets. Reserved: " + reservedTickets + 
-                    ", Requested: " + quantity
+                    "Not enough reserved tickets. Reserved: %d, Requested: %d"
+                            .formatted(reservedTickets, quantity)
             );
         }
         
-        return this
-                .withReservedTickets(reservedTickets - quantity)
-                .withSoldTickets(soldTickets + quantity)
-                .withUpdatedAt(Instant.now())
-                .withVersion(version + 1);
+        return new Event(eventId, name, description, venue, eventDate, totalCapacity,
+                availableTickets, reservedTickets - quantity, soldTickets + quantity,
+                status, createdAt, Instant.now(), version + 1);
     }
 
     /**
      * Releases reserved tickets back to available.
-     *
-     * @param quantity Number of tickets to release
-     * @return Updated event
      */
     public Event releaseReservedTickets(int quantity) {
         if (reservedTickets < quantity) {
             throw new IllegalStateException(
-                    "Not enough reserved tickets. Reserved: " + reservedTickets + 
-                    ", Requested: " + quantity
+                    "Not enough reserved tickets. Reserved: %d, Requested: %d"
+                            .formatted(reservedTickets, quantity)
             );
         }
         
-        return this
-                .withReservedTickets(reservedTickets - quantity)
-                .withAvailableTickets(availableTickets + quantity)
-                .withUpdatedAt(Instant.now())
-                .withVersion(version + 1);
+        return new Event(eventId, name, description, venue, eventDate, totalCapacity,
+                availableTickets + quantity, reservedTickets - quantity, soldTickets,
+                status, createdAt, Instant.now(), version + 1);
     }
 
     /**
      * Cancels the event.
-     *
-     * @return Updated event with cancelled status
      */
     public Event cancel() {
         if (status == EventStatus.CANCELLED) {
             throw new IllegalStateException("Event is already cancelled");
         }
         
-        return this
-                .withStatus(EventStatus.CANCELLED)
-                .withUpdatedAt(Instant.now())
-                .withVersion(version + 1);
+        return new Event(eventId, name, description, venue, eventDate, totalCapacity,
+                availableTickets, reservedTickets, soldTickets,
+                EventStatus.CANCELLED, createdAt, Instant.now(), version + 1);
     }
 
     /**
      * Checks if tickets are available.
-     *
-     * @param quantity Quantity to check
-     * @return true if available, false otherwise
      */
     public boolean hasAvailableTickets(int quantity) {
         return availableTickets >= quantity && status == EventStatus.ACTIVE;
     }
 
-    /**
-     * Gets total tickets sold (confirmed).
-     *
-     * @return Number of sold tickets
-     */
-    public int getTotalSold() {
-        return soldTickets;
+    public int getTotalSold() { return soldTickets; }
+    public int getRemainingCapacity() { return availableTickets; }
+
+    // Getters
+    public EventId getEventId() { return eventId; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public String getVenue() { return venue; }
+    public Instant getEventDate() { return eventDate; }
+    public int getTotalCapacity() { return totalCapacity; }
+    public int getAvailableTickets() { return availableTickets; }
+    public int getReservedTickets() { return reservedTickets; }
+    public int getSoldTickets() { return soldTickets; }
+    public EventStatus getStatus() { return status; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+    public int getVersion() { return version; }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof Event other && Objects.equals(eventId, other.eventId);
     }
 
-    /**
-     * Gets remaining capacity.
-     *
-     * @return Number of tickets not yet sold or reserved
-     */
-    public int getRemainingCapacity() {
-        return availableTickets;
+    @Override
+    public int hashCode() {
+        return Objects.hash(eventId);
+    }
+
+    @Override
+    public String toString() {
+        return "Event[eventId=%s, name=%s, status=%s]".formatted(eventId, name, status);
     }
 }
