@@ -66,14 +66,13 @@ public class DynamoDBTicketInventoryRepository implements TicketInventoryReposit
                 .build();
 
         return Mono.fromFuture(dynamoDbClient.getItem(request))
-                .map(response -> {
+                .flatMap(response -> {
                     if (response.hasItem()) {
-                        return fromDynamoDBItem(response.item());
+                        TicketInventory inventory = fromDynamoDBItem(response.item());
+                        return Mono.just(inventory);
                     }
-                    return null;
+                    return Mono.empty();
                 })
-                .cast(TicketInventory.class)
-                .switchIfEmpty(Mono.empty())
                 .doOnSuccess(i -> {
                     if (i != null) {
                         log.debug("Ticket inventory found: eventId={}, ticketType={}", 

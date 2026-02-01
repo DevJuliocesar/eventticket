@@ -1,6 +1,7 @@
 package com.eventticket.infrastructure.scheduler;
 
 import com.eventticket.application.usecase.ReleaseExpiredReservationsUseCase;
+import com.eventticket.infrastructure.config.ReservationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,15 +18,20 @@ public class ReservationExpirationScheduler {
     private static final Logger log = LoggerFactory.getLogger(ReservationExpirationScheduler.class);
 
     private final ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase;
+    private final ReservationProperties reservationProperties;
 
-    public ReservationExpirationScheduler(ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase) {
+    public ReservationExpirationScheduler(
+            ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase,
+            ReservationProperties reservationProperties
+    ) {
         this.releaseExpiredReservationsUseCase = releaseExpiredReservationsUseCase;
+        this.reservationProperties = reservationProperties;
     }
 
     /**
-     * Releases expired reservations every minute.
-     * Runs periodically to identify and release reservations that exceeded
-     * the 10-minute timeout without confirmation.
+     * Releases expired reservations periodically.
+     * Runs based on configured check interval to identify and release reservations
+     * that exceeded the configured timeout without confirmation.
      */
     @Scheduled(fixedDelayString = "${application.reservation.check-interval-ms:60000}")
     public void releaseExpiredReservations() {
