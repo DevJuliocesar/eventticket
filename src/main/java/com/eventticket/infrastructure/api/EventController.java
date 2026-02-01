@@ -1,9 +1,12 @@
 package com.eventticket.infrastructure.api;
 
 import com.eventticket.application.dto.CreateEventRequest;
+import com.eventticket.application.dto.CreateInventoryRequest;
 import com.eventticket.application.dto.EventAvailabilityResponse;
 import com.eventticket.application.dto.EventResponse;
+import com.eventticket.application.dto.InventoryResponse;
 import com.eventticket.application.usecase.CreateEventUseCase;
+import com.eventticket.application.usecase.CreateInventoryUseCase;
 import com.eventticket.application.usecase.GetEventAvailabilityUseCase;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -26,13 +29,16 @@ public class EventController {
 
     private final CreateEventUseCase createEventUseCase;
     private final GetEventAvailabilityUseCase getEventAvailabilityUseCase;
+    private final CreateInventoryUseCase createInventoryUseCase;
 
     public EventController(
             CreateEventUseCase createEventUseCase,
-            GetEventAvailabilityUseCase getEventAvailabilityUseCase
+            GetEventAvailabilityUseCase getEventAvailabilityUseCase,
+            CreateInventoryUseCase createInventoryUseCase
     ) {
         this.createEventUseCase = createEventUseCase;
         this.getEventAvailabilityUseCase = getEventAvailabilityUseCase;
+        this.createInventoryUseCase = createInventoryUseCase;
     }
 
     /**
@@ -66,5 +72,26 @@ public class EventController {
     public Mono<EventAvailabilityResponse> getEventAvailability(@PathVariable String eventId) {
         log.debug("Received get availability request for event: {}", eventId);
         return getEventAvailabilityUseCase.execute(eventId);
+    }
+
+    /**
+     * Creates ticket inventory for an event.
+     * Functional Requirement #1: Event inventory management.
+     * Allows creating multiple ticket types (VIP, General, etc.) for the same event.
+     *
+     * @param request Inventory creation request
+     * @return Created inventory response
+     */
+    @PostMapping(
+            value = "/inventory",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<InventoryResponse> createInventory(@Valid @RequestBody CreateInventoryRequest request) {
+        log.info("Received create inventory request: eventId={}, ticketType={}", 
+                request.eventId(), request.ticketType());
+        return createInventoryUseCase.execute(request)
+                .map(InventoryResponse::fromDomain);
     }
 }
