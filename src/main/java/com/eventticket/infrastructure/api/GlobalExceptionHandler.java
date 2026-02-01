@@ -115,6 +115,18 @@ public class GlobalExceptionHandler {
                 )));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleIllegalStateException(IllegalStateException ex) {
+        log.warn("Illegal state: {}", ex.getMessage());
+        return Mono.just(ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(
+                        HttpStatus.CONFLICT.value(),
+                        "Illegal state",
+                        ex.getMessage()
+                )));
+    }
+
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<ErrorResponse>> handleGenericException(Exception ex) {
         log.error("Unexpected error", ex);

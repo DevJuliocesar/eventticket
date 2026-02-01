@@ -1,5 +1,6 @@
 package com.eventticket.application.dto;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +23,7 @@ public record CreateInventoryRequest(
         Integer totalQuantity,
         
         @NotNull(message = "Price amount cannot be null")
-        @Min(value = 0, message = "Price amount cannot be negative")
+        @DecimalMin(value = "0.0", inclusive = true, message = "Price amount cannot be negative")
         BigDecimal priceAmount,
         
         @NotBlank(message = "Currency code cannot be blank")
