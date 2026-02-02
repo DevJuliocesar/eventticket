@@ -8,6 +8,8 @@ import com.eventticket.domain.valueobject.CustomerId;
 import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.Money;
 import com.eventticket.domain.valueobject.OrderId;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -34,11 +36,14 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
     private static final String TABLE_NAME = "TicketOrders";
 
     private final DynamoDbAsyncClient dynamoDbClient;
+    private final ObjectMapper objectMapper;
 
     public DynamoDBTicketOrderRepository(
-            DynamoDbAsyncClient dynamoDbClient
+            DynamoDbAsyncClient dynamoDbClient,
+            ObjectMapper objectMapper
     ) {
         this.dynamoDbClient = dynamoDbClient;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -203,9 +208,21 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
             String eventName = item.get("eventName").s();
             OrderStatus status = OrderStatus.valueOf(item.get("status").s());
             
-            // Tickets are stored separately in TicketItems table
-            // Create order with empty tickets list - tickets will be loaded separately when needed
+            // Deserialize tickets if they exist (backward compatibility with old data)
+            // New data stores tickets separately in TicketItems table
             List<TicketItem> tickets = List.of();
+            AttributeValue ticketsAttr = item.get("tickets");
+            if (ticketsAttr != null && ticketsAttr.s() != null && !ticketsAttr.s().isEmpty()) {
+                try {
+                    String ticketsJson = ticketsAttr.s();
+                    tickets = objectMapper.readValue(ticketsJson, new TypeReference<List<TicketItem>>() {});
+                    log.debug("Deserialized {} tickets from JSON for order {}", tickets.size(), orderId.value());
+                } catch (Exception e) {
+                    log.warn("Failed to deserialize tickets from JSON for order {}. Using empty list. Error: {}", 
+                            orderId.value(), e.getMessage());
+                    tickets = List.of();
+                }
+            }
             
             BigDecimal totalAmount = new BigDecimal(item.get("totalAmount").n());
             String totalCurrency = item.get("totalCurrency").s();

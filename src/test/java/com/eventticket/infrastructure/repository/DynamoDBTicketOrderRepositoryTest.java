@@ -7,6 +7,9 @@ import com.eventticket.domain.valueobject.CustomerId;
 import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.Money;
 import com.eventticket.domain.valueobject.OrderId;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,8 @@ class DynamoDBTicketOrderRepositoryTest {
     @Mock
     private DynamoDbAsyncClient dynamoDbClient;
 
+    private ObjectMapper objectMapper;
+
     @InjectMocks
     private DynamoDBTicketOrderRepository orderRepository;
 
@@ -54,6 +59,13 @@ class DynamoDBTicketOrderRepositoryTest {
         orderId = OrderId.generate();
         customerId = CustomerId.of("customer-123");
         eventId = EventId.generate();
+        
+        // Initialize ObjectMapper for JSON serialization/deserialization
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        
+        // Create repository with ObjectMapper
+        orderRepository = new DynamoDBTicketOrderRepository(dynamoDbClient, objectMapper);
         
         List<TicketItem> tickets = List.of(
                 TicketItem.create("VIP", Money.of(100.0, "USD"))
@@ -243,18 +255,27 @@ class DynamoDBTicketOrderRepositoryTest {
     }
 
     private Map<String, AttributeValue> createOrderItem(TicketOrder order) {
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put("orderId", AttributeValue.builder().s(order.getOrderId().value()).build());
-        item.put("customerId", AttributeValue.builder().s(order.getCustomerId().value()).build());
-        item.put("orderNumber", AttributeValue.builder().s(order.getOrderNumber()).build());
-        item.put("eventId", AttributeValue.builder().s(order.getEventId().value()).build());
-        item.put("eventName", AttributeValue.builder().s(order.getEventName()).build());
-        item.put("status", AttributeValue.builder().s(order.getStatus().name()).build());
-        item.put("totalAmount", AttributeValue.builder().n(order.getTotalAmount().getAmount().toString()).build());
-        item.put("totalCurrency", AttributeValue.builder().s(order.getTotalAmount().getCurrencyCode()).build());
-        item.put("createdAt", AttributeValue.builder().n(String.valueOf(order.getCreatedAt().getEpochSecond())).build());
-        item.put("updatedAt", AttributeValue.builder().n(String.valueOf(order.getUpdatedAt().getEpochSecond())).build());
-        item.put("version", AttributeValue.builder().n(String.valueOf(order.getVersion())).build());
-        return item;
+        try {
+            Map<String, AttributeValue> item = new HashMap<>();
+            item.put("orderId", AttributeValue.builder().s(order.getOrderId().value()).build());
+            item.put("customerId", AttributeValue.builder().s(order.getCustomerId().value()).build());
+            item.put("orderNumber", AttributeValue.builder().s(order.getOrderNumber()).build());
+            item.put("eventId", AttributeValue.builder().s(order.getEventId().value()).build());
+            item.put("eventName", AttributeValue.builder().s(order.getEventName()).build());
+            item.put("status", AttributeValue.builder().s(order.getStatus().name()).build());
+            
+            // Serialize tickets as JSON for backward compatibility
+            String ticketsJson = objectMapper.writeValueAsString(order.getTickets());
+            item.put("tickets", AttributeValue.builder().s(ticketsJson).build());
+            
+            item.put("totalAmount", AttributeValue.builder().n(order.getTotalAmount().getAmount().toString()).build());
+            item.put("totalCurrency", AttributeValue.builder().s(order.getTotalAmount().getCurrencyCode()).build());
+            item.put("createdAt", AttributeValue.builder().n(String.valueOf(order.getCreatedAt().getEpochSecond())).build());
+            item.put("updatedAt", AttributeValue.builder().n(String.valueOf(order.getUpdatedAt().getEpochSecond())).build());
+            item.put("version", AttributeValue.builder().n(String.valueOf(order.getVersion())).build());
+            return item;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create order item for test", e);
+        }
     }
 }

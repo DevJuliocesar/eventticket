@@ -74,13 +74,13 @@ class ProcessTicketOrderUseCaseTest {
                 .map(ticket -> ticket.reserve("system:order-processed"))
                 .toList();
 
-        TicketOrder reservedOrder = availableOrder.reserve();
-
         when(orderRepository.findById(actualOrderId))
                 .thenReturn(Mono.just(availableOrder));
         when(ticketItemRepository.findByOrderId(actualOrderId))
                 .thenReturn(Flux.fromIterable(testTickets));
-        when(ticketItemRepository.saveAll(any(List.class)))
+        @SuppressWarnings("unchecked")
+        var anyTicketList = any(List.class);
+        when(ticketItemRepository.saveAll(anyTicketList))
                 .thenReturn(Flux.fromIterable(reservedTickets));
         when(orderRepository.save(any(TicketOrder.class)))
                 .thenAnswer(invocation -> {

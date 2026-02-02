@@ -155,4 +155,235 @@ class ReleaseExpiredReservationsUseCaseTest {
                 })
                 .verifyComplete();
     }
+
+    @Test
+    @DisplayName("Should handle event not found gracefully")
+    void shouldHandleEventNotFoundGracefully() {
+        // Given
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(expiredReservation));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.empty()); // Event not found
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation.expire()));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then - Should still mark reservation as expired even if event not found
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(1L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle event with insufficient reserved tickets")
+    void shouldHandleEventWithInsufficientReservedTickets() {
+        // Given
+        Event eventWithInsufficientTickets = Event.create(
+                "Test Event",
+                "Test Description",
+                "Test Venue",
+                Instant.now().plusSeconds(86400),
+                1000
+        );
+        // Event has only 5 reserved tickets, but reservation needs 10
+        eventWithInsufficientTickets = eventWithInsufficientTickets.reserveTickets(5);
+
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(expiredReservation));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.just(eventWithInsufficientTickets));
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation.expire()));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then - Should still mark reservation as expired
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(1L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle inventory not found")
+    void shouldHandleInventoryNotFound() {
+        // Given
+        Event releasedEvent = testEvent.releaseReservedTickets(10);
+        TicketReservation expiredReservation = this.expiredReservation.expire();
+
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(this.expiredReservation));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.just(testEvent));
+        when(eventRepository.updateWithOptimisticLock(any(Event.class)))
+                .thenReturn(Mono.just(releasedEvent));
+        when(inventoryRepository.findByEventIdAndTicketType(eventId, "VIP"))
+                .thenReturn(Mono.empty()); // Inventory not found
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then - Should still mark reservation as expired
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(1L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle inventory with insufficient reserved tickets")
+    void shouldHandleInventoryWithInsufficientReservedTickets() {
+        // Given
+        Event releasedEvent = testEvent.releaseReservedTickets(10);
+        TicketInventory inventoryWithInsufficientTickets = TicketInventory.create(
+                eventId,
+                "VIP",
+                "Test Event",
+                100,
+                Money.of(100.0, "USD")
+        );
+        // Inventory has only 5 reserved tickets, but reservation needs 10
+        inventoryWithInsufficientTickets = inventoryWithInsufficientTickets.reserve(5);
+        TicketReservation expiredReservation = this.expiredReservation.expire();
+
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(this.expiredReservation));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.just(testEvent));
+        when(eventRepository.updateWithOptimisticLock(any(Event.class)))
+                .thenReturn(Mono.just(releasedEvent));
+        when(inventoryRepository.findByEventIdAndTicketType(eventId, "VIP"))
+                .thenReturn(Mono.just(inventoryWithInsufficientTickets));
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then - Should still mark reservation as expired
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(1L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle error in event update and still mark reservation as expired")
+    void shouldHandleErrorInEventUpdateAndStillMarkReservationAsExpired() {
+        // Given
+        TicketReservation expiredReservation = this.expiredReservation.expire();
+
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(this.expiredReservation));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.just(testEvent));
+        when(eventRepository.updateWithOptimisticLock(any(Event.class)))
+                .thenReturn(Mono.error(new RuntimeException("Optimistic lock conflict")));
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then - Should still mark reservation as expired despite error
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(1L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle error in inventory update and still mark reservation as expired")
+    void shouldHandleErrorInInventoryUpdateAndStillMarkReservationAsExpired() {
+        // Given
+        Event releasedEvent = testEvent.releaseReservedTickets(10);
+        TicketReservation expiredReservation = this.expiredReservation.expire();
+
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(this.expiredReservation));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.just(testEvent));
+        when(eventRepository.updateWithOptimisticLock(any(Event.class)))
+                .thenReturn(Mono.just(releasedEvent));
+        when(inventoryRepository.findByEventIdAndTicketType(eventId, "VIP"))
+                .thenReturn(Mono.just(testInventory));
+        when(inventoryRepository.updateWithOptimisticLock(any(TicketInventory.class)))
+                .thenReturn(Mono.error(new RuntimeException("Database error")));
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then - Should still mark reservation as expired despite error
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(1L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should handle multiple expired reservations")
+    void shouldHandleMultipleExpiredReservations() {
+        // Given
+        OrderId orderId2 = OrderId.generate();
+        ReservationId reservationId2 = ReservationId.generate();
+        TicketReservation expiredReservation2 = TicketReservation.create(
+                orderId2,
+                eventId,
+                "General",
+                5,
+                0 // Expires immediately
+        );
+
+        Event releasedEvent = testEvent.releaseReservedTickets(10);
+        TicketInventory releasedInventory = testInventory.releaseReservation(10);
+        TicketReservation expiredReservation1 = this.expiredReservation.expire();
+        TicketReservation expiredReservation2Final = expiredReservation2.expire();
+
+        when(reservationRepository.findExpiredReservations(any(Instant.class)))
+                .thenReturn(Flux.just(this.expiredReservation, expiredReservation2));
+        when(eventRepository.findById(eventId))
+                .thenReturn(Mono.just(testEvent))
+                .thenReturn(Mono.just(testEvent));
+        when(eventRepository.updateWithOptimisticLock(any(Event.class)))
+                .thenReturn(Mono.just(releasedEvent))
+                .thenReturn(Mono.just(releasedEvent));
+        when(inventoryRepository.findByEventIdAndTicketType(eventId, "VIP"))
+                .thenReturn(Mono.just(testInventory));
+        when(inventoryRepository.findByEventIdAndTicketType(eventId, "General"))
+                .thenReturn(Mono.just(TicketInventory.create(
+                        eventId, "General", "Test Event", 200, Money.of(50.0, "USD")
+                ).reserve(5)));
+        when(inventoryRepository.updateWithOptimisticLock(any(TicketInventory.class)))
+                .thenReturn(Mono.just(releasedInventory))
+                .thenReturn(Mono.just(TicketInventory.create(
+                        eventId, "General", "Test Event", 200, Money.of(50.0, "USD")
+                ).reserve(5).releaseReservation(5)));
+        when(reservationRepository.save(any(TicketReservation.class)))
+                .thenReturn(Mono.just(expiredReservation1))
+                .thenReturn(Mono.just(expiredReservation2Final));
+
+        // When
+        Mono<Long> result = releaseExpiredReservationsUseCase.execute();
+
+        // Then
+        StepVerifier.create(result)
+                .assertNext(count -> {
+                    assertThat(count).isEqualTo(2L);
+                })
+                .verifyComplete();
+    }
 }
