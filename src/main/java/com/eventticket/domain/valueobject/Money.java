@@ -1,5 +1,9 @@
 package com.eventticket.domain.valueobject;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Currency;
@@ -42,6 +46,18 @@ public record Money(BigDecimal amount, Currency currency) {
 
     public static Money usd(double amount) {
         return of(amount, "USD");
+    }
+
+    /**
+     * Factory method for Jackson deserialization.
+     * Handles Currency as a string code for proper deserialization.
+     */
+    @JsonCreator
+    public static Money fromJson(
+            @JsonProperty("amount") BigDecimal amount,
+            @JsonProperty("currency") String currencyCode
+    ) {
+        return of(amount, currencyCode);
     }
 
     // Arithmetic operations
@@ -88,6 +104,15 @@ public record Money(BigDecimal amount, Currency currency) {
     }
 
     public String getCurrencyCode() {
+        return currency.getCurrencyCode();
+    }
+
+    /**
+     * Custom getter for Jackson serialization.
+     * Serializes Currency as a string code instead of the Currency object.
+     */
+    @JsonGetter("currency")
+    public String getCurrencyAsString() {
         return currency.getCurrencyCode();
     }
 

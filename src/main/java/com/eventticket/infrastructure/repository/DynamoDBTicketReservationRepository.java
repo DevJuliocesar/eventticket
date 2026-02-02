@@ -92,6 +92,9 @@ public class DynamoDBTicketReservationRepository implements TicketReservationRep
         return Flux.from(dynamoDbClient.scanPaginator(request))
                 .flatMap(response -> Flux.fromIterable(response.items()))
                 .map(this::fromDynamoDBItem)
+                .onErrorContinue((error, item) -> {
+                    log.warn("Skipping invalid reservation item due to error: {}", error.getMessage());
+                })
                 .doOnError(error -> log.error("Error finding ticket reservations by orderId in DynamoDB", error));
     }
 
@@ -99,18 +102,25 @@ public class DynamoDBTicketReservationRepository implements TicketReservationRep
     public Flux<TicketReservation> findByStatus(ReservationStatus status) {
         log.debug("Finding ticket reservations by status: {}", status);
         
+        Map<String, String> expressionAttributeNames = new HashMap<>();
+        expressionAttributeNames.put("#status", "status");
+        
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":status", AttributeValue.builder().s(status.name()).build());
 
         ScanRequest request = ScanRequest.builder()
                 .tableName(TABLE_NAME)
-                .filterExpression("status = :status")
+                .filterExpression("#status = :status")
+                .expressionAttributeNames(expressionAttributeNames)
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
 
         return Flux.from(dynamoDbClient.scanPaginator(request))
                 .flatMap(response -> Flux.fromIterable(response.items()))
                 .map(this::fromDynamoDBItem)
+                .onErrorContinue((error, item) -> {
+                    log.warn("Skipping invalid reservation item due to error: {}", error.getMessage());
+                })
                 .doOnError(error -> log.error("Error finding ticket reservations by status in DynamoDB", error));
     }
 
@@ -118,19 +128,26 @@ public class DynamoDBTicketReservationRepository implements TicketReservationRep
     public Flux<TicketReservation> findExpiredReservations(Instant now) {
         log.debug("Finding expired ticket reservations before: {}", now);
         
+        Map<String, String> expressionAttributeNames = new HashMap<>();
+        expressionAttributeNames.put("#status", "status");
+        
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":now", AttributeValue.builder().n(String.valueOf(now.getEpochSecond())).build());
         expressionAttributeValues.put(":activeStatus", AttributeValue.builder().s(ReservationStatus.ACTIVE.name()).build());
 
         ScanRequest request = ScanRequest.builder()
                 .tableName(TABLE_NAME)
-                .filterExpression("expiresAt < :now AND status = :activeStatus")
+                .filterExpression("expiresAt < :now AND #status = :activeStatus")
+                .expressionAttributeNames(expressionAttributeNames)
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
 
         return Flux.from(dynamoDbClient.scanPaginator(request))
                 .flatMap(response -> Flux.fromIterable(response.items()))
                 .map(this::fromDynamoDBItem)
+                .onErrorContinue((error, item) -> {
+                    log.warn("Skipping invalid reservation item due to error: {}", error.getMessage());
+                })
                 .doOnError(error -> log.error("Error finding expired ticket reservations in DynamoDB", error));
     }
 
@@ -164,7 +181,15 @@ public class DynamoDBTicketReservationRepository implements TicketReservationRep
         item.put("quantity", AttributeValue.builder().n(String.valueOf(reservation.getQuantity())).build());
         item.put("status", AttributeValue.builder().s(reservation.getStatus().name()).build());
         item.put("expiresAt", AttributeValue.builder().n(String.valueOf(reservation.getExpiresAt().getEpochSecond())).build());
-        item.put("createdAt", AttributeValue.builder().n(String.valueOf(reservation.getCreatedAt().getEpochSecond())).build());
+        
+        // Ensure createdAt is always set - use current time if null (shouldn't happen, but defensive)
+        Instant createdAt = reservation.getCreatedAt();
+        if (createdAt == null) {
+            log.warn("Reservation {} has null createdAt, using current time", reservation.getReservationId().value());
+            createdAt = Instant.now();
+        }
+        item.put("createdAt", AttributeValue.builder().n(String.valueOf(createdAt.getEpochSecond())).build());
+        
         return item;
     }
 
@@ -181,7 +206,18 @@ public class DynamoDBTicketReservationRepository implements TicketReservationRep
             int quantity = Integer.parseInt(item.get("quantity").n());
             ReservationStatus status = ReservationStatus.valueOf(item.get("status").s());
             Instant expiresAt = Instant.ofEpochSecond(Long.parseLong(item.get("expiresAt").n()));
-            Instant createdAt = Instant.ofEpochSecond(Long.parseLong(item.get("createdAt").n()));
+            
+            // Handle createdAt - fallback for old data that might not have this field
+            Instant createdAt;
+            AttributeValue createdAtAttr = item.get("createdAt");
+            if (createdAtAttr != null && createdAtAttr.n() != null && !createdAtAttr.n().isEmpty()) {
+                createdAt = Instant.ofEpochSecond(Long.parseLong(createdAtAttr.n()));
+            } else {
+                // Fallback for old data - this shouldn't happen for new reservations
+                log.warn("Reservation {} missing createdAt (old data?), using current time", 
+                        item.get("reservationId").s());
+                createdAt = Instant.now();
+            }
 
             // Use reflection to access private constructor
             Constructor<TicketReservation> constructor = TicketReservation.class.getDeclaredConstructor(
@@ -194,8 +230,9 @@ public class DynamoDBTicketReservationRepository implements TicketReservationRep
                     quantity, status, expiresAt, createdAt
             );
         } catch (Exception e) {
-            log.error("Error converting DynamoDB item to TicketReservation", e);
-            throw new RuntimeException("Failed to reconstruct TicketReservation from DynamoDB", e);
+            log.error("Error converting DynamoDB item to TicketReservation. Item keys: {}, Error: {}", 
+                    item.keySet(), e.getMessage(), e);
+            throw new RuntimeException("Failed to reconstruct TicketReservation from DynamoDB: " + e.getMessage(), e);
         }
     }
 }

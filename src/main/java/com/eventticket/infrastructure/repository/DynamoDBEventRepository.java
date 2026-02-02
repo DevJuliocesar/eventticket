@@ -63,14 +63,13 @@ public class DynamoDBEventRepository implements EventRepository {
                 .build();
 
         return Mono.fromFuture(dynamoDbClient.getItem(request))
-                .map(response -> {
+                .flatMap(response -> {
                     if (response.hasItem()) {
-                        return fromDynamoDBItem(response.item());
+                        Event event = fromDynamoDBItem(response.item());
+                        return Mono.just(event);
                     }
-                    return null;
+                    return Mono.empty();
                 })
-                .cast(Event.class)
-                .switchIfEmpty(Mono.empty())
                 .doOnSuccess(e -> log.debug("Event found: {}", eventId.value()))
                 .doOnError(error -> log.error("Error finding event in DynamoDB", error));
     }
@@ -79,12 +78,16 @@ public class DynamoDBEventRepository implements EventRepository {
     public Flux<Event> findByStatus(EventStatus status) {
         log.debug("Finding events by status: {}", status);
         
+        Map<String, String> expressionAttributeNames = new HashMap<>();
+        expressionAttributeNames.put("#status", "status");
+        
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":status", AttributeValue.builder().s(status.name()).build());
 
         ScanRequest request = ScanRequest.builder()
                 .tableName(TABLE_NAME)
-                .filterExpression("status = :status")
+                .filterExpression("#status = :status")
+                .expressionAttributeNames(expressionAttributeNames)
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
 
@@ -98,13 +101,17 @@ public class DynamoDBEventRepository implements EventRepository {
     public Flux<Event> findUpcomingEvents(Instant from) {
         log.debug("Finding upcoming events from: {}", from);
         
+        Map<String, String> expressionAttributeNames = new HashMap<>();
+        expressionAttributeNames.put("#status", "status");
+        
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":fromDate", AttributeValue.builder().n(String.valueOf(from.getEpochSecond())).build());
         expressionAttributeValues.put(":activeStatus", AttributeValue.builder().s(EventStatus.ACTIVE.name()).build());
 
         ScanRequest request = ScanRequest.builder()
                 .tableName(TABLE_NAME)
-                .filterExpression("eventDate > :fromDate AND status = :activeStatus")
+                .filterExpression("eventDate > :fromDate AND #status = :activeStatus")
+                .expressionAttributeNames(expressionAttributeNames)
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
 

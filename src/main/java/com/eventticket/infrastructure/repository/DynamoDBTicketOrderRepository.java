@@ -110,12 +110,16 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
     public Flux<TicketOrder> findByStatus(OrderStatus status) {
         log.debug("Finding ticket orders by status: {}", status);
         
+        Map<String, String> expressionAttributeNames = new HashMap<>();
+        expressionAttributeNames.put("#status", "status");
+        
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
         expressionAttributeValues.put(":status", AttributeValue.builder().s(status.name()).build());
 
         ScanRequest request = ScanRequest.builder()
                 .tableName(TABLE_NAME)
-                .filterExpression("status = :status")
+                .filterExpression("#status = :status")
+                .expressionAttributeNames(expressionAttributeNames)
                 .expressionAttributeValues(expressionAttributeValues)
                 .build();
 

@@ -12,6 +12,7 @@ import com.eventticket.domain.repository.TicketReservationRepository;
 import com.eventticket.domain.valueobject.CustomerId;
 import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.Money;
+import com.eventticket.infrastructure.config.ReservationProperties;
 import com.eventticket.infrastructure.messaging.OrderMessage;
 import com.eventticket.infrastructure.messaging.SqsOrderPublisher;
 import org.slf4j.Logger;
@@ -38,17 +39,20 @@ public class CreateTicketOrderUseCase {
     private final TicketInventoryRepository inventoryRepository;
     private final TicketReservationRepository reservationRepository;
     private final SqsOrderPublisher sqsOrderPublisher;
+    private final ReservationProperties reservationProperties;
 
     public CreateTicketOrderUseCase(
             TicketOrderRepository orderRepository,
             TicketInventoryRepository inventoryRepository,
             TicketReservationRepository reservationRepository,
-            SqsOrderPublisher sqsOrderPublisher
+            SqsOrderPublisher sqsOrderPublisher,
+            ReservationProperties reservationProperties
     ) {
         this.orderRepository = orderRepository;
         this.inventoryRepository = inventoryRepository;
         this.reservationRepository = reservationRepository;
         this.sqsOrderPublisher = sqsOrderPublisher;
+        this.reservationProperties = reservationProperties;
     }
 
     /**
@@ -134,13 +138,16 @@ public class CreateTicketOrderUseCase {
             String ticketType,
             int quantity
     ) {
+        int timeoutMinutes = reservationProperties.getTimeoutMinutes();
         TicketReservation reservation = TicketReservation.create(
                 order.getOrderId(),
                 order.getEventId(),
                 ticketType,
-                quantity
+                quantity,
+                timeoutMinutes
         );
         
+        log.debug("Created reservation with timeout: {} minutes", timeoutMinutes);
         return reservationRepository.save(reservation);
     }
 

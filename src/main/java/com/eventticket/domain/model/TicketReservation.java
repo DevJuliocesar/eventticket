@@ -15,8 +15,6 @@ import java.util.Objects;
  */
 public final class TicketReservation {
     
-    private static final int RESERVATION_TIMEOUT_MINUTES = 10;
-    
     private final ReservationId reservationId;
     private final OrderId orderId;
     private final EventId eventId;
@@ -48,15 +46,24 @@ public final class TicketReservation {
 
     /**
      * Creates a new ticket reservation.
+     * The timeout should be provided from application configuration.
+     *
+     * @param orderId Order identifier
+     * @param eventId Event identifier
+     * @param ticketType Ticket type
+     * @param quantity Quantity of tickets
+     * @param timeoutMinutes Timeout in minutes (should come from application.reservation.timeout-minutes)
+     * @return Created reservation
      */
     public static TicketReservation create(
             OrderId orderId,
             EventId eventId,
             String ticketType,
-            int quantity
+            int quantity,
+            int timeoutMinutes
     ) {
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(RESERVATION_TIMEOUT_MINUTES, ChronoUnit.MINUTES);
+        Instant expiresAt = now.plus(timeoutMinutes, ChronoUnit.MINUTES);
         
         return new TicketReservation(
                 ReservationId.generate(),

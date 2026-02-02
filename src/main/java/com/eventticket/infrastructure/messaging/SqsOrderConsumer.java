@@ -77,9 +77,19 @@ public class SqsOrderConsumer {
     private void processMessage(Message message) {
         try {
             String messageBody = message.body();
+            log.debug("Received message body: {}", messageBody);
+            
+            // Validate message body before deserialization
+            if (messageBody == null || messageBody.trim().isEmpty()) {
+                log.error("Received empty message body, deleting message");
+                deleteMessage(message);
+                return;
+            }
+            
             OrderMessage orderMessage = objectMapper.readValue(messageBody, OrderMessage.class);
 
-            log.info("Processing order message: orderId={}", orderMessage.orderId());
+            log.info("Processing order message: orderId={}, ticketType={}", 
+                    orderMessage.orderId(), orderMessage.ticketType());
 
             processOrderUseCase.execute(orderMessage.orderId())
                     .subscribe(
@@ -93,8 +103,14 @@ public class SqsOrderConsumer {
                                 // Could implement DLQ logic here
                             }
                     );
+        } catch (com.fasterxml.jackson.databind.exc.ValueInstantiationException e) {
+            log.error("Invalid message format - cannot deserialize OrderMessage. Message body: {}, Error: {}", 
+                    message.body(), e.getMessage());
+            log.error("This usually means the message is missing required fields (orderId, eventId, customerId, ticketType, quantity, timestamp)");
+            deleteMessage(message); // Delete malformed messages to prevent reprocessing
         } catch (Exception e) {
-            log.error("Error parsing message: receiptHandle={}", message.receiptHandle(), e);
+            log.error("Error parsing message: receiptHandle={}, messageBody={}", 
+                    message.receiptHandle(), message.body(), e);
             deleteMessage(message); // Delete malformed messages
         }
     }

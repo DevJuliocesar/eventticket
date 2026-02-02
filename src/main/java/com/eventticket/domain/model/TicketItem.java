@@ -3,6 +3,8 @@ package com.eventticket.domain.model;
 import com.eventticket.domain.exception.InvalidTicketStateTransitionException;
 import com.eventticket.domain.valueobject.Money;
 import com.eventticket.domain.valueobject.TicketId;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -67,6 +69,31 @@ public final class TicketItem {
                 TicketStatus.COMPLIMENTARY,
                 Instant.now(),
                 "system:" + reason
+        );
+    }
+
+    /**
+     * Factory method for Jackson deserialization.
+     * Reconstructs TicketItem from JSON representation.
+     */
+    @JsonCreator
+    public static TicketItem fromJson(
+            @JsonProperty("ticketId") TicketId ticketId,
+            @JsonProperty("ticketType") String ticketType,
+            @JsonProperty("seatNumber") String seatNumber,
+            @JsonProperty("price") Money price,
+            @JsonProperty("status") TicketStatus status,
+            @JsonProperty("statusChangedAt") Instant statusChangedAt,
+            @JsonProperty("statusChangedBy") String statusChangedBy
+    ) {
+        return new TicketItem(
+                ticketId,
+                ticketType,
+                seatNumber,
+                price,
+                status,
+                statusChangedAt,
+                statusChangedBy
         );
     }
 
