@@ -115,7 +115,12 @@ public final class TicketOrder {
         if (status != OrderStatus.PENDING_CONFIRMATION) {
             throw new IllegalStateException("Only pending confirmation orders can be marked as sold");
         }
-        if (updatedTickets.size() != tickets.size()) {
+        if (updatedTickets.isEmpty()) {
+            throw new IllegalArgumentException("Updated tickets list cannot be empty");
+        }
+        // When tickets are stored separately (e.g., in DynamoDB), the tickets list may be empty
+        // In that case, we only validate that we're providing at least one ticket
+        if (!tickets.isEmpty() && updatedTickets.size() != tickets.size()) {
             throw new IllegalArgumentException("Updated tickets count must match original tickets count");
         }
         return new TicketOrder(orderId, customerId, orderNumber, eventId, eventName,

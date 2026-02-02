@@ -77,12 +77,21 @@ public class ConfirmTicketOrderUseCase {
                     
                     return customerInfoRepository.save(customerInfo)
                             .then(Mono.defer(() -> {
-                                // Change status from RESERVED to PENDING_CONFIRMATION
-                                TicketOrder confirmedOrder = order.confirm();
-                                return Mono.just(confirmedOrder);
+                                // Update tickets to PENDING_CONFIRMATION status
+                                return ticketItemRepository.findByOrderId(order.getOrderId())
+                                        .map(ticket -> ticket.confirmPayment(order.getCustomerId().value()))
+                                        .collectList()
+                                        .flatMap(confirmedTickets -> 
+                                            ticketItemRepository.saveAll(confirmedTickets)
+                                                .then(Mono.just(order))
+                                        );
                             }));
                 })
-                .flatMap(orderRepository::save)
+                .flatMap(order -> {
+                    // Change status from RESERVED to PENDING_CONFIRMATION
+                    TicketOrder confirmedOrder = order.confirm();
+                    return orderRepository.save(confirmedOrder);
+                })
                 .flatMap(order -> 
                     // Load tickets from TicketItems table for response
                     ticketItemRepository.findByOrderId(order.getOrderId())

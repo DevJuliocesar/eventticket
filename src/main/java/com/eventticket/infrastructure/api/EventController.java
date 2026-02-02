@@ -8,12 +8,14 @@ import com.eventticket.application.dto.InventoryResponse;
 import com.eventticket.application.usecase.CreateEventUseCase;
 import com.eventticket.application.usecase.CreateInventoryUseCase;
 import com.eventticket.application.usecase.GetEventAvailabilityUseCase;
+import com.eventticket.application.usecase.GetInventoryUseCase;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -30,15 +32,18 @@ public class EventController {
     private final CreateEventUseCase createEventUseCase;
     private final GetEventAvailabilityUseCase getEventAvailabilityUseCase;
     private final CreateInventoryUseCase createInventoryUseCase;
+    private final GetInventoryUseCase getInventoryUseCase;
 
     public EventController(
             CreateEventUseCase createEventUseCase,
             GetEventAvailabilityUseCase getEventAvailabilityUseCase,
-            CreateInventoryUseCase createInventoryUseCase
+            CreateInventoryUseCase createInventoryUseCase,
+            GetInventoryUseCase getInventoryUseCase
     ) {
         this.createEventUseCase = createEventUseCase;
         this.getEventAvailabilityUseCase = getEventAvailabilityUseCase;
         this.createInventoryUseCase = createInventoryUseCase;
+        this.getInventoryUseCase = getInventoryUseCase;
     }
 
     /**
@@ -83,7 +88,7 @@ public class EventController {
      * @return Created inventory response
      */
     @PostMapping(
-            value = "/inventory",
+            value = "/inventories",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -93,5 +98,21 @@ public class EventController {
                 request.eventId(), request.ticketType());
         return createInventoryUseCase.execute(request)
                 .map(InventoryResponse::fromDomain);
+    }
+
+    /**
+     * Lists all ticket inventory for an event.
+     * Returns all ticket types and their availability for the specified event.
+     *
+     * @param eventId Event identifier
+     * @return List of inventory responses
+     */
+    @GetMapping(
+            value = "/{eventId}/inventories",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public Flux<InventoryResponse> getInventory(@PathVariable String eventId) {
+        log.info("Received get inventory request for event: {}", eventId);
+        return getInventoryUseCase.execute(eventId);
     }
 }

@@ -251,9 +251,8 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
         List<TransactWriteItem> transactItems = new ArrayList<>();
 
         // For each ticket-seat pair, create:
-        // 1. A ConditionCheck to verify the seat is not already reserved
-        // 2. A PutItem to create the seat reservation
-        // 3. A PutItem to save the ticket with the seat number
+        // 1. A PutItem to create the seat reservation (with condition that seat doesn't exist)
+        // 2. An UpdateItem to update the ticket with the seat number
         for (int i = 0; i < tickets.size(); i++) {
             TicketItem ticket = tickets.get(i);
             String seatNumber = seatNumbers.get(i);
@@ -261,21 +260,8 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
             // Create composite key for seat reservation: eventId#ticketType#seatNumber
             String seatKey = "%s#%s#%s".formatted(eventId.value(), ticketType, seatNumber);
 
-            // 1. ConditionCheck: Verify seat is not already reserved
-            Map<String, AttributeValue> seatKeyMap = new HashMap<>();
-            seatKeyMap.put("seatKey", AttributeValue.builder().s(seatKey).build());
-
-            ConditionCheck conditionCheck = ConditionCheck.builder()
-                    .tableName(SEAT_RESERVATIONS_TABLE)
-                    .key(seatKeyMap)
-                    .conditionExpression("attribute_not_exists(seatKey)")
-                    .build();
-
-            transactItems.add(TransactWriteItem.builder()
-                    .conditionCheck(conditionCheck)
-                    .build());
-
-            // 2. PutItem: Create seat reservation
+            // PutItem: Create seat reservation with condition that it doesn't already exist
+            // This combines the ConditionCheck and Put into a single operation
             Map<String, AttributeValue> seatReservation = new HashMap<>();
             seatReservation.put("seatKey", AttributeValue.builder().s(seatKey).build());
             seatReservation.put("eventId", AttributeValue.builder().s(eventId.value()).build());
@@ -289,6 +275,7 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
             Put putSeatReservation = Put.builder()
                     .tableName(SEAT_RESERVATIONS_TABLE)
                     .item(seatReservation)
+                    .conditionExpression("attribute_not_exists(seatKey)") // Condition: seat must not already exist
                     .build();
 
             transactItems.add(TransactWriteItem.builder()
@@ -304,8 +291,9 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
             // Build update expression to set seatNumber and status
             String updateExpression = "SET seatNumber = :seatNumber, #status = :status, statusChangedAt = :statusChangedAt, statusChangedBy = :statusChangedBy";
             
-            // Condition: ticket must exist and not already have a seat assigned
-            String conditionExpression = "attribute_exists(ticketId) AND attribute_not_exists(seatNumber)";
+            // Condition: ticket must exist, be in PENDING_CONFIRMATION status, and not already have a seat assigned
+            // This ensures we can only transition from PENDING_CONFIRMATION to SOLD
+            String conditionExpression = "attribute_exists(ticketId) AND #status = :pendingStatus AND attribute_not_exists(seatNumber)";
             
             Map<String, String> expressionAttributeNames = new HashMap<>();
             expressionAttributeNames.put("#status", "status");
@@ -313,6 +301,7 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
             Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
             expressionAttributeValues.put(":seatNumber", AttributeValue.builder().s(seatNumber).build());
             expressionAttributeValues.put(":status", AttributeValue.builder().s("SOLD").build());
+            expressionAttributeValues.put(":pendingStatus", AttributeValue.builder().s("PENDING_CONFIRMATION").build());
             expressionAttributeValues.put(":statusChangedAt", AttributeValue.builder().n(String.valueOf(Instant.now().getEpochSecond())).build());
             expressionAttributeValues.put(":statusChangedBy", AttributeValue.builder().s(ticket.getStatusChangedBy()).build());
 

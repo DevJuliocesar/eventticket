@@ -1,9 +1,12 @@
 package com.eventticket.application.usecase;
 
 import com.eventticket.domain.model.OrderStatus;
+import com.eventticket.domain.model.TicketItem;
 import com.eventticket.domain.model.TicketOrder;
+import com.eventticket.domain.repository.TicketItemRepository;
 import com.eventticket.domain.repository.TicketOrderRepository;
 import com.eventticket.domain.valueobject.OrderId;
+import reactor.core.publisher.Flux;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,9 +26,14 @@ public class ProcessTicketOrderUseCase {
     private static final Logger log = LoggerFactory.getLogger(ProcessTicketOrderUseCase.class);
 
     private final TicketOrderRepository orderRepository;
+    private final TicketItemRepository ticketItemRepository;
 
-    public ProcessTicketOrderUseCase(TicketOrderRepository orderRepository) {
+    public ProcessTicketOrderUseCase(
+            TicketOrderRepository orderRepository,
+            TicketItemRepository ticketItemRepository
+    ) {
         this.orderRepository = orderRepository;
+        this.ticketItemRepository = ticketItemRepository;
     }
 
     /**
@@ -46,6 +54,16 @@ public class ProcessTicketOrderUseCase {
                 .switchIfEmpty(Mono.error(new IllegalStateException(
                         "Order is not in AVAILABLE status: " + orderId)))
                 .flatMap(this::validateAndUpdateInventory)
+                .flatMap(order -> {
+                    // Update tickets to RESERVED status
+                    return ticketItemRepository.findByOrderId(order.getOrderId())
+                            .map(ticket -> ticket.reserve("system:order-processed"))
+                            .collectList()
+                            .flatMap(reservedTickets -> 
+                                ticketItemRepository.saveAll(reservedTickets)
+                                    .then(Mono.just(order))
+                            );
+                })
                 .flatMap(order -> {
                     // Change status from AVAILABLE to RESERVED
                     TicketOrder updatedOrder = order.reserve();
