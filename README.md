@@ -2,7 +2,7 @@
 
 Ticket management and event processing system built with reactive architecture using Spring WebFlux, Java 25, DynamoDB, SQS, and asynchronous message processing.
 
-## 🚀 Technologies
+## Technologies
 
 - **Java 25**: Modern language features
   - **Records**: Immutable data carriers for DTOs, Value Objects, and Audit entities
@@ -19,7 +19,7 @@ Ticket management and event processing system built with reactive architecture u
 - **Redis**: Distributed cache for high performance
 - **Docker & Docker Compose**: Containerization
 
-## 📋 Docker Compose Services
+## Docker Compose Services
 
 ### 1. Spring Boot Application (`app`)
 - **Port**: 8080
@@ -40,7 +40,7 @@ Ticket management and event processing system built with reactive architecture u
 - Distributed cache for high performance
 - AOF (Append Only File) persistence
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Start Services
 
@@ -75,7 +75,7 @@ docker-compose build app
 docker-compose up -d --build app
 ```
 
-## 📊 Service Access
+## Service Access
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
@@ -85,7 +85,82 @@ docker-compose up -d --build app
 | LocalStack Health | http://localhost:4566/_localstack/health | - |
 | Redis | localhost:6379 | - |
 
-## 🗄️ DynamoDB Data Structure
+## API Endpoints
+
+### Base URL
+```
+http://localhost:8080/api/v1
+```
+
+### Events Endpoints
+
+| Method | Endpoint | Description | Status Code |
+|--------|----------|-------------|------------|
+| `POST` | `/events` | Create a new event | 201 Created |
+| `GET` | `/events` | List all events (paginated) | 200 OK |
+| `GET` | `/events/{eventId}/availability` | Get real-time availability for an event | 200 OK |
+| `POST` | `/events/inventories` | Create ticket inventory for an event | 201 Created |
+| `GET` | `/events/{eventId}/inventories` | List all inventory for an event (paginated) | 200 OK |
+
+### Orders Endpoints
+
+| Method | Endpoint | Description | Status Code |
+|--------|----------|-------------|------------|
+| `POST` | `/orders` | Create a new ticket order | 201 Created |
+| `GET` | `/orders/{orderId}` | Get order by ID | 200 OK |
+| `POST` | `/orders/{orderId}/confirm` | Confirm order with customer payment info | 200 OK |
+| `POST` | `/orders/{orderId}/mark-as-sold` | Mark order as sold (payment completed) | 200 OK |
+
+### API Documentation
+
+For detailed API documentation with request/response examples, see:
+- **Postman Collection**: `doc/api.json` (import into Postman)
+- **cURL Examples**: `COMANDOS_CURL_PRUEBA.md`
+
+### Example Requests
+
+#### Create Event
+```bash
+curl -X POST http://localhost:8080/api/v1/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Concert 2026",
+    "description": "Amazing concert",
+    "venue": "Stadium",
+    "eventDate": "2026-02-28T18:00:00Z",
+    "totalCapacity": 1000
+  }'
+```
+
+#### Create Order
+```bash
+curl -X POST http://localhost:8080/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": "customer-123",
+    "eventId": "event-456",
+    "eventName": "Concert 2026",
+    "ticketType": "VIP",
+    "quantity": 2
+  }'
+```
+
+#### Confirm Order
+```bash
+curl -X POST http://localhost:8080/api/v1/orders/{orderId}/confirm \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerName": "John Doe",
+    "email": "john@example.com",
+    "phoneNumber": "+57 300 123 4567",
+    "address": "Street 123",
+    "city": "Bogotá",
+    "country": "Colombia",
+    "paymentMethod": "Nequi"
+  }'
+```
+
+## DynamoDB Data Structure
 
 ### Tables
 
@@ -159,7 +234,7 @@ docker-compose up -d --build app
 
 See details in: `init-scripts/03-init-localstack.sh`
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -192,17 +267,336 @@ See details in: `init-scripts/03-init-localstack.sh`
 | **SQS** | Async Messaging | Decoupling, distributed processing, auto-retry |
 | **Redis** | Cache | Low latency, temporary data |
 
-### ✅ Architecture Features
+### Architecture Features
 
-✅ **No Blocking**: DynamoDB with optimistic concurrency
-✅ **NoSQL Native**: DynamoDB for all data persistence
-✅ **Async Flows**: SQS for message orchestration
-✅ **End-to-End Reactive**: AWS SDK v2 Async (DynamoDB + SQS)
-✅ **Event Sourcing**: Immutable events in DynamoDB with GSI
-✅ **High Availability**: DynamoDB partitioning + SQS distributed queues
-✅ **Local Development**: LocalStack emulates AWS at no cost
+- **No Blocking**: DynamoDB with optimistic concurrency
+- **NoSQL Native**: DynamoDB for all data persistence
+- **Async Flows**: SQS for message orchestration
+- **End-to-End Reactive**: AWS SDK v2 Async (DynamoDB + SQS)
+- **Event Sourcing**: Immutable events in DynamoDB with GSI
+- **High Availability**: DynamoDB partitioning + SQS distributed queues
+- **Local Development**: LocalStack emulates AWS at no cost
 
-## 🛠️ AWS CLI Commands with LocalStack
+### Clean Architecture Layers
+
+The application follows **Clean Architecture** principles with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              Infrastructure Layer                        │
+│  (Controllers, Repositories, Messaging, Config)          │
+│  - EventController, TicketOrderController                 │
+│  - DynamoDB Repositories                                 │
+│  - SQS Consumers/Publishers                               │
+└──────────────────┬──────────────────────────────────────┘
+                   │ depends on
+┌──────────────────▼──────────────────────────────────────┐
+│              Application Layer                           │
+│  (Use Cases, DTOs)                                      │
+│  - CreateEventUseCase, CreateTicketOrderUseCase         │
+│  - ConfirmTicketOrderUseCase, ProcessTicketOrderUseCase │
+│  - Request/Response DTOs                                │
+└──────────────────┬──────────────────────────────────────┘
+                   │ depends on
+┌──────────────────▼──────────────────────────────────────┐
+│              Domain Layer                                │
+│  (Entities, Value Objects, Repository Interfaces)        │
+│  - TicketOrder, TicketInventory, Event                   │
+│  - Money, OrderId, CustomerId, EventId                   │
+│  - Repository Interfaces (Ports)                        │
+│  - Domain Exceptions                                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Principles**:
+- **Dependency Inversion**: Domain has zero dependencies on outer layers
+- **SOLID Principles**: Single Responsibility, Open/Closed, Liskov, Interface Segregation, Dependency Inversion
+- **Domain-Driven Design**: Rich domain model with business logic in entities
+- **Hexagonal Architecture**: Adapters (controllers, repositories) adapt external world to domain
+
+## Application Flow
+
+### 1. Event Creation Flow
+
+```
+User Request
+    │
+    ▼
+POST /api/v1/events
+    │
+    ▼
+EventController.createEvent()
+    │
+    ▼
+CreateEventUseCase.execute()
+    │
+    ├─► Validates request
+    ├─► Creates Event domain entity
+    ├─► Saves to DynamoDB (EventRepository)
+    └─► Returns EventResponse
+```
+
+### 2. Ticket Order Creation Flow (Async Processing)
+
+```
+User Request
+    │
+    ▼
+POST /api/v1/orders
+    │
+    ▼
+TicketOrderController.createOrder()
+    │
+    ▼
+CreateTicketOrderUseCase.execute()
+    │
+    ├─► Validates inventory availability
+    ├─► Reserves tickets (optimistic locking)
+    ├─► Creates TicketOrder (status: RESERVED)
+    ├─► Creates TicketReservation (10 min timeout)
+    ├─► Saves tickets to TicketItems table
+    ├─► Publishes message to SQS (ticket-order-queue)
+    └─► Returns OrderResponse immediately
+    
+    [Async Processing - Background]
+    │
+    ▼
+SqsOrderConsumer.pollAndProcessMessages()
+    │ (runs every 5 seconds)
+    ▼
+ProcessTicketOrderUseCase.execute()
+    │
+    ├─► Validates real-time availability
+    ├─► Updates inventory (optimistic locking)
+    ├─► Changes order status: RESERVED → PENDING_CONFIRMATION
+    └─► Updates order in DynamoDB
+```
+
+### 3. Order Confirmation Flow
+
+```
+User Request
+    │
+    ▼
+POST /api/v1/orders/{orderId}/confirm
+    │
+    ▼
+TicketOrderController.confirmOrder()
+    │
+    ▼
+ConfirmTicketOrderUseCase.execute()
+    │
+    ├─► Loads order from repository
+    ├─► Validates order status (must be RESERVED or PENDING_CONFIRMATION)
+    ├─► Saves customer information (CustomerInfoRepository)
+    ├─► Updates order status to PENDING_CONFIRMATION
+    ├─► Updates ticket statuses to PENDING_CONFIRMATION
+    └─► Returns updated OrderResponse
+```
+
+### 4. Mark Order as Sold Flow
+
+```
+User Request
+    │
+    ▼
+POST /api/v1/orders/{orderId}/mark-as-sold
+    │
+    ▼
+TicketOrderController.markOrderAsSold()
+    │
+    ▼
+MarkOrderAsSoldUseCase.execute()
+    │
+    ├─► Loads order (must be PENDING_CONFIRMATION)
+    ├─► Assigns unique seat numbers to tickets
+    ├─► Updates order status to SOLD
+    ├─► Updates ticket statuses to SOLD (final state)
+    ├─► Updates inventory (decrements available, increments sold)
+    ├─► Releases reservation
+    └─► Returns final OrderResponse
+```
+
+### 5. Reservation Expiration Flow (Scheduled)
+
+```
+Scheduler (every 1 minute)
+    │
+    ▼
+ReleaseExpiredReservationsUseCase.execute()
+    │
+    ├─► Queries reservations where expiresAt < now()
+    ├─► For each expired reservation:
+    │   ├─► Returns tickets to inventory (optimistic locking)
+    │   ├─► Updates reservation status to EXPIRED
+    │   ├─► Updates order status to CANCELLED (if applicable)
+    │   └─► Logs release action
+    └─► Returns count of released reservations
+```
+
+### 6. Availability Query Flow (Reactive)
+
+```
+User Request
+    │
+    ▼
+GET /api/v1/events/{eventId}/availability
+    │
+    ▼
+EventController.getEventAvailability()
+    │
+    ▼
+GetEventAvailabilityUseCase.execute()
+    │
+    ├─► Loads event from DynamoDB
+    ├─► Queries inventory for all ticket types
+    ├─► Calculates real-time availability
+    │   (totalQuantity - reservedQuantity - soldQuantity)
+    └─► Returns EventAvailabilityResponse
+```
+
+### 7. Ticket Status State Machine
+
+```
+AVAILABLE (Initial)
+    │
+    ├─► RESERVED (User initiates purchase)
+    │       │
+    │       ├─► PENDING_CONFIRMATION (Payment processing)
+    │       │       │
+    │       │       ├─► SOLD (Payment confirmed) [FINAL]
+    │       │       └─► AVAILABLE (Payment failed)
+    │       │
+    │       └─► AVAILABLE (Reservation expired)
+    │
+    └─► COMPLIMENTARY (Admin assigned) [FINAL]
+```
+
+**State Rules**:
+- **SOLD** and **COMPLIMENTARY** are final states (irreversible)
+- Only **SOLD** tickets count as revenue
+- All state transitions are atomic and auditable
+- See `TICKET_STATUS_FLOW.md` for detailed rules
+
+## Testing
+
+### Test Structure
+
+The project includes comprehensive tests organized by layer:
+
+```
+src/test/java/com/eventticket/
+├── application/
+│   ├── dto/                          # DTO tests
+│   │   ├── PagedEventResponseTest.java
+│   │   └── PagedInventoryResponseTest.java
+│   └── usecase/                      # Use case tests
+│       ├── ConcurrencyTest.java      # Concurrent order creation
+│       ├── CreateEventUseCaseTest.java
+│       ├── CreateInventoryUseCaseTest.java
+│       ├── CreateTicketOrderUseCaseTest.java
+│       ├── ConfirmTicketOrderUseCaseTest.java
+│       ├── GetEventAvailabilityUseCaseTest.java
+│       ├── GetInventoryUseCaseTest.java
+│       ├── GetTicketOrderUseCaseTest.java
+│       ├── ListEventsUseCaseTest.java
+│       ├── MarkOrderAsSoldUseCaseTest.java
+│       ├── ProcessTicketOrderUseCaseTest.java
+│       └── ReleaseExpiredReservationsUseCaseTest.java
+└── infrastructure/
+    ├── api/                          # Controller tests
+    │   ├── EventControllerTest.java
+    │   └── GlobalExceptionHandlerTest.java
+    └── repository/                   # Repository integration tests
+        ├── DynamoDBEventRepositoryTest.java
+        ├── DynamoDBCustomerInfoRepositoryTest.java
+        ├── DynamoDBTicketInventoryRepositoryTest.java
+        ├── DynamoDBTicketItemRepositoryTest.java
+        ├── DynamoDBTicketOrderRepositoryTest.java
+        ├── DynamoDBTicketReservationRepositoryTest.java
+        └── DynamoDBTicketStateTransitionAuditRepositoryTest.java
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=CreateTicketOrderUseCaseTest
+
+# Run tests with coverage report
+mvn clean test jacoco:report
+
+# View coverage report
+# Open: target/site/jacoco/index.html
+```
+
+### Test Coverage
+
+Current coverage status (see `COVERAGE_REPORT.md` for details):
+
+- **Overall Coverage**: ~11% (target: 90%)
+- **Best Coverage**:
+  - `application.dto`: 57%
+  - `infrastructure.api`: 64%
+  - `domain.exception`: 46%
+- **Needs Improvement**:
+  - `infrastructure.repository`: 0% (critical)
+  - `domain.model`: 9%
+  - `application.usecase`: 13%
+  - `infrastructure.messaging`: 0%
+
+### Test Types
+
+#### 1. Unit Tests
+- **Location**: `application/usecase/`, `application/dto/`
+- **Purpose**: Test business logic in isolation
+- **Tools**: JUnit 5, Mockito, Reactor Test
+- **Example**: `CreateTicketOrderUseCaseTest` - Tests order creation with mocked repositories
+
+#### 2. Integration Tests
+- **Location**: `infrastructure/repository/`
+- **Purpose**: Test repository implementations with real DynamoDB (LocalStack)
+- **Tools**: JUnit 5, Testcontainers (LocalStack), AWS SDK v2
+- **Example**: `DynamoDBTicketOrderRepositoryTest` - Tests CRUD operations on DynamoDB
+
+#### 3. API Tests
+- **Location**: `infrastructure/api/`
+- **Purpose**: Test REST endpoints end-to-end
+- **Tools**: WebTestClient, Mockito
+- **Example**: `EventControllerTest` - Tests HTTP requests/responses
+
+#### 4. Concurrency Tests
+- **Location**: `application/usecase/ConcurrencyTest.java`
+- **Purpose**: Test concurrent order creation and inventory updates
+- **Tools**: JUnit 5, Reactor Test, Virtual Threads
+- **Scenario**: Multiple users trying to purchase the same tickets simultaneously
+
+### Test Configuration
+
+Tests use **LocalStack** for AWS services emulation:
+- DynamoDB tables created automatically
+- SQS queues initialized
+- No real AWS account needed
+- Fast and isolated test execution
+
+### Viewing Test Results
+
+```bash
+# Test reports location
+target/surefire-reports/
+
+# Coverage report location
+target/site/jacoco/index.html
+
+# View in browser
+python3 -m http.server 8000 --directory target/site/jacoco
+# Open: http://localhost:8000
+```
+
+## AWS CLI Commands with LocalStack
 
 ### Configure awslocal alias (optional but recommended)
 
@@ -263,7 +657,7 @@ awslocal sqs get-queue-attributes --queue-url $QUEUE_URL --attribute-names All
 awslocal sqs purge-queue --queue-url $QUEUE_URL
 ```
 
-## 🔧 Verification Commands
+## Verification Commands
 
 ### Verify Services
 
@@ -290,7 +684,7 @@ docker-compose logs -f app
 docker-compose logs -f redis
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Containers won't start
 
@@ -326,7 +720,7 @@ docker system prune -a
 docker-compose up -d --build
 ```
 
-## 📚 Next Steps
+## Next Steps
 
 1. Create Spring Boot project structure
 2. Implement reactive controllers with WebFlux
@@ -337,65 +731,65 @@ docker-compose up -d --build
 7. Configure Redis Reactive for caching
 8. Add tests with WebTestClient and Testcontainers (LocalStack)
 
-## 💡 Why This Architecture with LocalStack
+## Why This Architecture with LocalStack
 
-### 🎯 LocalStack - AWS Emulator
+### LocalStack - AWS Emulator
 
-✅ **Local Development**: No AWS account or costs needed
-✅ **Multiple Services**: DynamoDB + SQS (and 90+ more services)
-✅ **Persistence**: Data persists between restarts
-✅ **API Compatible**: 100% compatible with AWS SDK
-✅ **Testing**: Perfect for integration tests
-✅ **CI/CD Ready**: Easy integration in pipelines
+- **Local Development**: No AWS account or costs needed
+- **Multiple Services**: DynamoDB + SQS (and 90+ more services)
+- **Persistence**: Data persists between restarts
+- **API Compatible**: 100% compatible with AWS SDK
+- **Testing**: Perfect for integration tests
+- **CI/CD Ready**: Easy integration in pipelines
 
-### 🎯 SQS vs RabbitMQ
+### SQS vs RabbitMQ
 
 | Feature | SQS (LocalStack) | RabbitMQ |
 |---------|------------------|----------|
-| Simplicity | ✅ Very simple | ⚠️ More complex |
-| Scalability | ✅ Unlimited (AWS) | ⚠️ Requires config |
-| Dead Letter Queue | ✅ Native | ✅ Configurable |
-| FIFO | ✅ Native support | ✅ Durable queues |
-| Auto-Retry | ✅ Built-in | ⚠️ Manual |
-| Visibility Timeout | ✅ Native | ⚠️ Manual |
-| Delay Queues | ✅ Built-in | ⚠️ Plugins |
-| Cloud Ready | ✅ AWS direct | ⚠️ Requires hosting |
-| Local Development | ✅ LocalStack | ✅ Docker |
+| Simplicity | Very simple | More complex |
+| Scalability | Unlimited (AWS) | Requires config |
+| Dead Letter Queue | Native | Configurable |
+| FIFO | Native support | Durable queues |
+| Auto-Retry | Built-in | Manual |
+| Visibility Timeout | Native | Manual |
+| Delay Queues | Built-in | Plugins |
+| Cloud Ready | AWS direct | Requires hosting |
+| Local Development | LocalStack | Docker |
 
-### 🎯 DynamoDB for Everything
+### DynamoDB for Everything
 
-✅ **Event Sourcing**: Perfect append-only design
-✅ **Partition Key + Sort Key**: `aggregateId` + `version` ensures order
-✅ **No Conflicts**: Concurrent writes to different partitions
-✅ **GSI**: Global Secondary Indexes for complex queries
-✅ **Scalability**: Auto-scaling with no practical limits
-✅ **Single-Table Design**: Optional pattern for high performance
-✅ **Optimistic Locking**: Version field for inventory
-✅ **TTL**: Automatic expiration for reservations (can be enabled)
+- **Event Sourcing**: Perfect append-only design
+- **Partition Key + Sort Key**: `aggregateId` + `version` ensures order
+- **No Conflicts**: Concurrent writes to different partitions
+- **GSI**: Global Secondary Indexes for complex queries
+- **Scalability**: Auto-scaling with no practical limits
+- **Single-Table Design**: Optional pattern for high performance
+- **Optimistic Locking**: Version field for inventory
+- **TTL**: Automatic expiration for reservations (can be enabled)
 
-### ✅ Production Stack Benefits
+### Production Stack Benefits
 
 | Component | Development | Production |
 |-----------|-------------|------------|
 | **DynamoDB** | LocalStack | AWS DynamoDB |
 | **SQS** | LocalStack | AWS SQS |
 | **Redis** | Docker | AWS ElastiCache |
-| **LocalStack** | Dev/Test | ➡️ Real AWS |
+| **LocalStack** | Dev/Test | Real AWS |
 
 **Zero code changes needed when moving to production!**
 
-## 📄 Project Description
+## Project Description
 
 **EventTicket** is a ticketing event processing system that demonstrates:
 
-- ✅ **Concurrent Operations Without Blocking**: Using DynamoDB with optimistic concurrency
-- ✅ **NoSQL Persistence**: DynamoDB for fast data access
-- ✅ **Async Flows**: Orchestration via SQS between components
-- ✅ **Reactive Architecture**: Spring WebFlux with non-blocking end-to-end programming
-- ✅ **Event Sourcing**: All ticketing events stored immutably in DynamoDB
-- ✅ **Java 25**: Leveraging Records, Pattern Matching, and Virtual Threads
+- **Concurrent Operations Without Blocking**: Using DynamoDB with optimistic concurrency
+- **NoSQL Persistence**: DynamoDB for fast data access
+- **Async Flows**: Orchestration via SQS between components
+- **Reactive Architecture**: Spring WebFlux with non-blocking end-to-end programming
+- **Event Sourcing**: All ticketing events stored immutably in DynamoDB
+- **Java 25**: Leveraging Records, Pattern Matching, and Virtual Threads
 
-## 📝 Environment Variables
+## Environment Variables
 
 Create a `.env` file (optional):
 
@@ -415,7 +809,7 @@ APP_PORT=8080
 SPRING_PROFILES_ACTIVE=docker
 ```
 
-## 🔐 Security Note
+## Security Note
 
 This setup is for **development only**. For production:
 - Use real AWS credentials with IAM roles
@@ -425,6 +819,6 @@ This setup is for **development only**. For production:
 - Use Redis AUTH and TLS
 - Implement proper authentication/authorization
 
-## 📄 License
+## License
 
 Development project for EventTicket.

@@ -1,0 +1,759 @@
+{
+	"info": {
+		"_postman_id": "c9616556-ae3a-435c-98bc-5235c9c45b30",
+		"name": "EventTicket",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23378142"
+	},
+	"item": [
+		{
+			"name": "Events",
+			"item": [
+				{
+					"name": "Create Event",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar que el status sea 200 o 201",
+									"pm.test(\"Status code is 200 or 201\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"// Solo procesar si el status es exitoso",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    let jsonData;",
+									"    try {",
+									"        jsonData = pm.response.json();",
+									"    } catch (e) {",
+									"        pm.test(\"La respuesta es JSON válido\", function () {",
+									"            pm.expect.fail(\"La respuesta no es JSON válido\");",
+									"        });",
+									"    }",
+									"",
+									"    if (jsonData) {",
+									"        // Test: la respuesta tiene eventId",
+									"        pm.test(\"La respuesta contiene eventId y no está vacío\", function () {",
+									"            pm.expect(jsonData).to.have.property(\"eventId\");",
+									"            pm.expect(jsonData.eventId).to.exist;",
+									"            pm.expect(String(jsonData.eventId)).to.not.be.empty;",
+									"        });",
+									"",
+									"        // Guardar eventId en variable de colección",
+									"        if (jsonData.eventId) {",
+									"            pm.collectionVariables.set(\"eventId\", jsonData.eventId);",
+									"            console.log(\"eventId guardado en variables de colección:\", jsonData.eventId);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"La pelota de letras 3\",\n    \"description\": \"Es una gran oportunidad de ser parte de esta historia; de reír y reflexionar con cada generación representada en el escenario. “La Pelota de Letras” es más que un show; es un viaje por la memoria colectiva, una cita con nuestras propias historias que se reinventa en cada función. Ninguna noche es igual a la otra, cada presentación es única, cargada de nuevos elementos que resuenan con jóvenes y adultos por igual.\",\n    \"venue\": \"TEATRO PIGOANZA\",\n    \"eventDate\": \"2026-02-28T18:00:00Z\",\n    \"totalCapacity\": \"776\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/events",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"events"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Ok",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"La pelota de letras\",\n    \"description\": \"Es una gran oportunidad de ser parte de esta historia; de reír y reflexionar con cada generación representada en el escenario. “La Pelota de Letras” es más que un show; es un viaje por la memoria colectiva, una cita con nuestras propias historias que se reinventa en cada función. Ninguna noche es igual a la otra, cada presentación es única, cargada de nuevos elementos que resuenan con jóvenes y adultos por igual.\",\n    \"venue\": \"TEATRO PIGOANZA\",\n    \"eventDate\": \"2026-02-28T18:00:00Z\",\n    \"totalCapacity\": \"776\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/events",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"events"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "745"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"eventId\": \"b5126a29-c234-44c2-867e-48d15f7eafd6\",\n    \"name\": \"La pelota de letras\",\n    \"description\": \"Es una gran oportunidad de ser parte de esta historia; de reír y reflexionar con cada generación representada en el escenario. “La Pelota de Letras” es más que un show; es un viaje por la memoria colectiva, una cita con nuestras propias historias que se reinventa en cada función. Ninguna noche es igual a la otra, cada presentación es única, cargada de nuevos elementos que resuenan con jóvenes y adultos por igual.\",\n    \"venue\": \"TEATRO PIGOANZA\",\n    \"eventDate\": 1772301600,\n    \"totalCapacity\": 776,\n    \"availableTickets\": 776,\n    \"reservedTickets\": 0,\n    \"soldTickets\": 0,\n    \"status\": \"ACTIVE\",\n    \"createdAt\": 1769915173.791498979,\n    \"updatedAt\": 1769915173.791498979\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Event",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/events/:eventId/availability",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"events",
+								":eventId",
+								"availability"
+							],
+							"variable": [
+								{
+									"key": "eventId",
+									"value": "{{eventId}}"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Ok",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/events/:eventId/availability",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"events",
+										":eventId",
+										"availability"
+									],
+									"variable": [
+										{
+											"key": "eventId",
+											"value": "{{eventId}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "199"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"eventId\": \"e5a5c44e-3c38-4c1b-aa59-f99521171141\",\n    \"name\": \"La pelota de letras\",\n    \"totalCapacity\": 776,\n    \"availableTickets\": 776,\n    \"reservedTickets\": 0,\n    \"soldTickets\": 0,\n    \"status\": \"ACTIVE\",\n    \"hasAvailability\": true\n}"
+						}
+					]
+				},
+				{
+					"name": "Create Inventary",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"ticketType\": \"GENERAL\",\n  \"totalQuantity\": 100,\n  \"priceAmount\": 70000,\n  \"currencyCode\": \"COP\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/events/inventories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"events",
+								"inventories"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "OK",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"ticketType\": \"VIP\",\n  \"totalQuantity\": 100,\n  \"priceAmount\": 150000,\n  \"currencyCode\": \"COP\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/events/inventory",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"events",
+										"inventory"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "226"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"eventId\": \"3de482dd-3245-467a-aaa5-d3b82fa14f68\",\n    \"ticketType\": \"VIP\",\n    \"eventName\": \"La pelota de letras\",\n    \"totalQuantity\": 100,\n    \"availableQuantity\": 100,\n    \"reservedQuantity\": 0,\n    \"priceAmount\": 150000,\n    \"priceCurrency\": \"COP\",\n    \"version\": 0\n}"
+						}
+					]
+				},
+				{
+					"name": "List Inventories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/events/{{eventId}}/inventories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"events",
+								"{{eventId}}",
+								"inventories"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Ok",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/events/{{eventId}}/inventories",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"events",
+										"{{eventId}}",
+										"inventories"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "602"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"inventories\": [\n        {\n            \"eventId\": \"f879cf3a-d3b0-436a-9d68-ccf14bba040f\",\n            \"ticketType\": \"GENERAL\",\n            \"eventName\": \"La pelota de letras 3\",\n            \"totalQuantity\": 100,\n            \"availableQuantity\": 100,\n            \"reservedQuantity\": 0,\n            \"soldQuantity\": 0,\n            \"priceAmount\": 70000,\n            \"priceCurrency\": \"COP\",\n            \"version\": 0\n        },\n        {\n            \"eventId\": \"f879cf3a-d3b0-436a-9d68-ccf14bba040f\",\n            \"ticketType\": \"VIP\",\n            \"eventName\": \"La pelota de letras 3\",\n            \"totalQuantity\": 10,\n            \"availableQuantity\": 8,\n            \"reservedQuantity\": 0,\n            \"soldQuantity\": 2,\n            \"priceAmount\": 150000,\n            \"priceCurrency\": \"COP\",\n            \"version\": 16\n        }\n    ],\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"totalElements\": 2,\n    \"totalPages\": 1,\n    \"hasNext\": false,\n    \"hasPrevious\": false\n}"
+						}
+					]
+				},
+				{
+					"name": "LIst events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/events",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"events"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Ok",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/events",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"events"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1598"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"events\": [\n        {\n            \"eventId\": \"238aecf4-ecfe-40af-835e-d4ae25af2e8b\",\n            \"name\": \"La pelota de letras\",\n            \"description\": \"Es una gran oportunidad de ser parte de esta historia; de reír y reflexionar con cada generación representada en el escenario. “La Pelota de Letras” es más que un show; es un viaje por la memoria colectiva, una cita con nuestras propias historias que se reinventa en cada función. Ninguna noche es igual a la otra, cada presentación es única, cargada de nuevos elementos que resuenan con jóvenes y adultos por igual.\",\n            \"venue\": \"TEATRO PIGOANZA\",\n            \"eventDate\": 1772301600,\n            \"totalCapacity\": 776,\n            \"availableTickets\": 776,\n            \"reservedTickets\": 0,\n            \"soldTickets\": 0,\n            \"status\": \"ACTIVE\",\n            \"createdAt\": 1769991577,\n            \"updatedAt\": 1769991577\n        },\n        {\n            \"eventId\": \"f879cf3a-d3b0-436a-9d68-ccf14bba040f\",\n            \"name\": \"La pelota de letras 3\",\n            \"description\": \"Es una gran oportunidad de ser parte de esta historia; de reír y reflexionar con cada generación representada en el escenario. “La Pelota de Letras” es más que un show; es un viaje por la memoria colectiva, una cita con nuestras propias historias que se reinventa en cada función. Ninguna noche es igual a la otra, cada presentación es única, cargada de nuevos elementos que resuenan con jóvenes y adultos por igual.\",\n            \"venue\": \"TEATRO PIGOANZA\",\n            \"eventDate\": 1772301600,\n            \"totalCapacity\": 776,\n            \"availableTickets\": 776,\n            \"reservedTickets\": 0,\n            \"soldTickets\": 0,\n            \"status\": \"ACTIVE\",\n            \"createdAt\": 1770000364,\n            \"updatedAt\": 1770000364\n        }\n    ],\n    \"page\": 1,\n    \"pageSize\": 10,\n    \"totalElements\": 2,\n    \"totalPages\": 1,\n    \"hasNext\": false,\n    \"hasPrevious\": false\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Order",
+			"item": [
+				{
+					"name": "Create Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verificar que el status sea 200 o 201",
+									"pm.test(\"Status code is 200 or 201\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+									"// Solo procesar si el status es exitoso",
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    let jsonData;",
+									"    try {",
+									"        jsonData = pm.response.json();",
+									"    } catch (e) {",
+									"        pm.test(\"La respuesta es JSON válido\", function () {",
+									"            pm.expect.fail(\"La respuesta no es JSON válido\");",
+									"        });",
+									"    }",
+									"",
+									"    if (jsonData) {",
+									"        // Test: la respuesta tiene orderID",
+									"        pm.test(\"La respuesta contiene orderId y no está vacío\", function () {",
+									"            pm.expect(jsonData).to.have.property(\"orderId\");",
+									"            pm.expect(jsonData.orderId).to.exist;",
+									"            pm.expect(String(jsonData.orderId)).to.not.be.empty;",
+									"        });",
+									"",
+									"        // Guardar orderId en variable de colección",
+									"        if (jsonData.orderId) {",
+									"            pm.collectionVariables.set(\"orderId\", jsonData.orderId);",
+									"            console.log(\"orderId guardado en variables de colección:\", jsonData.orderId);",
+									"        }",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": \"{{$randomUUID}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"eventName\": \"La pelota de letras\",\n    \"ticketType\": \"VIP\",\n    \"quantity\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Ok",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"customerId\": \"{{$randomUUID}}\",\n    \"eventId\": \"{{eventId}}\",\n    \"eventName\": \"La pelota de letras\",\n    \"ticketType\": \"VIP\",\n    \"quantity\": 5\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/orders",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orders"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "1543"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"orderId\": \"8c9df287-09c5-4455-87ab-5137b2100f7a\",\n    \"customerId\": \"79f8a584-ce90-42c0-bf01-c3fb2afd6ec6\",\n    \"orderNumber\": \"ORD-1769994657523\",\n    \"eventId\": \"238aecf4-ecfe-40af-835e-d4ae25af2e8b\",\n    \"eventName\": \"La pelota de letras\",\n    \"status\": \"RESERVED\",\n    \"tickets\": [\n        {\n            \"ticketId\": \"925c55ed-4249-49ea-abba-8553ae72d57e\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"A-1\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1769994657.522630864,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"a72dcd59-de17-4322-9958-566890aee1e9\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"A-2\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1769994657.522673383,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"623c8f01-8a5c-4c7b-ad47-028698ceb967\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"A-3\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1769994657.522743815,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"38b83d27-ad3f-4861-a9fd-cbb22811ffc5\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"A-4\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1769994657.522822573,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"7c2ccc5b-65cf-44ab-a756-333a8a8e5c6a\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"A-5\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1769994657.522897613,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        }\n    ],\n    \"totalAmount\": 750000,\n    \"currency\": \"COP\",\n    \"createdAt\": 1769994657.522963187,\n    \"updatedAt\": 1769994657.522963187\n}"
+						}
+					]
+				},
+				{
+					"name": "Confirm by User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerName\": \"María González\",\n    \"email\": \"maria.gonzalez@email.com\",\n    \"phoneNumber\": \"+57 310 987 6543\",\n    \"address\": \"Avenida 68 # 12-34\",\n    \"city\": \"Bogotá\",\n    \"country\": \"Colombia\",\n    \"paymentMethod\": \"Nequi\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/confirm",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{orderId}}",
+								"confirm"
+							]
+						},
+						"description": "Generated from cURL: curl -X POST http://localhost:8080/api/v1/orders/$ORDER_ID/confirm \\\n  -H \"Content-Type: application/json\" \\\n  -d \"{\n    \\\"customerName\\\": \\\"María González\\\",\n    \\\"email\\\": \\\"maria.gonzalez@email.com\\\",\n    \\\"phoneNumber\\\": \\\"+57 310 987 6543\\\",\n    \\\"address\\\": \\\"Avenida 68 # 12-34\\\",\n    \\\"city\\\": \\\"Bogotá\\\",\n    \\\"country\\\": \\\"Colombia\\\",\n    \\\"paymentMethod\\\": \\\"Nequi\\\"\n  }\""
+					},
+					"response": [
+						{
+							"name": "Ok",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"customerName\": \"María González\",\n    \"email\": \"maria.gonzalez@email.com\",\n    \"phoneNumber\": \"+57 310 987 6543\",\n    \"address\": \"Avenida 68 # 12-34\",\n    \"city\": \"Bogotá\",\n    \"country\": \"Colombia\",\n    \"paymentMethod\": \"Nequi\"\n  }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/orders/{{orderId}}/confirm",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orders",
+										"{{orderId}}",
+										"confirm"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "864"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"orderId\": \"56945151-2e77-47c4-ae96-0478205655ec\",\n    \"customerId\": \"6726cccc-e678-4e11-9377-b2ef0938508f\",\n    \"orderNumber\": \"ORD-1770003029019\",\n    \"eventId\": \"f879cf3a-d3b0-436a-9d68-ccf14bba040f\",\n    \"eventName\": \"La pelota de letras\",\n    \"status\": \"PENDING_CONFIRMATION\",\n    \"tickets\": [\n        {\n            \"ticketId\": \"b0cd4fa7-a44d-4a47-b72d-a11042ba77ca\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"PENDING_CONFIRMATION\",\n            \"statusChangedAt\": 1770003042,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"27c4f176-a1d2-46f8-804c-017222cab56b\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"PENDING_CONFIRMATION\",\n            \"statusChangedAt\": 1770003042,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        }\n    ],\n    \"totalAmount\": 300000,\n    \"currency\": \"COP\",\n    \"createdAt\": 1770003029,\n    \"updatedAt\": 1770003042.381841009\n}"
+						}
+					]
+				},
+				{
+					"name": "Get Order",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:orderId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								":orderId"
+							],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "{{orderId}}"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "OK",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/orders/:orderId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orders",
+										":orderId"
+									],
+									"variable": [
+										{
+											"key": "orderId",
+											"value": "{{orderId}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "2259"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"orderId\": \"aa0e233f-0ccc-41cc-ac74-d17484345bc5\",\n    \"customerId\": \"5e93dc81-2a11-4fb1-96c8-cbfc67a33dcd\",\n    \"orderNumber\": \"ORD-1770001886879\",\n    \"eventId\": \"f879cf3a-d3b0-436a-9d68-ccf14bba040f\",\n    \"eventName\": \"La pelota de letras\",\n    \"status\": \"PENDING_CONFIRMATION\",\n    \"tickets\": [\n        {\n            \"ticketId\": \"8f6e43ca-bfb8-486a-ba74-1ab554cfeaa3\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"525e3740-6ec3-404b-ad18-0056d5ea1f84\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"18c325af-28a0-4a27-9237-aed96a11e300\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"305dd160-69f6-4ed9-ae7a-7b6f4e347474\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"c1072ef6-60c4-49b0-9584-757c2c32e49f\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"d359be43-9985-484a-8dbd-6c6365fdc61f\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"1e6a1942-24bb-4ecd-a004-051a6b35cb76\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"79da9c80-ce50-4172-aba6-9babaf9e877e\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": null,\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"AVAILABLE\",\n            \"statusChangedAt\": 1770001886,\n            \"countsAsRevenue\": false,\n            \"accountingValue\": 150000\n        }\n    ],\n    \"totalAmount\": 1200000,\n    \"currency\": \"COP\",\n    \"createdAt\": 1770001886,\n    \"updatedAt\": 1770001889\n}"
+						}
+					]
+				},
+				{
+					"name": "Mark order as Sold",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/orders/:orderId/mark-as-sold",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								":orderId",
+								"mark-as-sold"
+							],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "{{orderId}}"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "ok",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/orders/:orderId/mark-as-sold",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"orders",
+										":orderId",
+										"mark-as-sold"
+									],
+									"variable": [
+										{
+											"key": "orderId",
+											"value": "{{orderId}}"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Content-Length",
+									"value": "817"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"orderId\": \"56945151-2e77-47c4-ae96-0478205655ec\",\n    \"customerId\": \"6726cccc-e678-4e11-9377-b2ef0938508f\",\n    \"orderNumber\": \"ORD-1770003029019\",\n    \"eventId\": \"f879cf3a-d3b0-436a-9d68-ccf14bba040f\",\n    \"eventName\": \"La pelota de letras\",\n    \"status\": \"SOLD\",\n    \"tickets\": [\n        {\n            \"ticketId\": \"b0cd4fa7-a44d-4a47-b72d-a11042ba77ca\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"B-9\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"SOLD\",\n            \"statusChangedAt\": 1770003047,\n            \"countsAsRevenue\": true,\n            \"accountingValue\": 150000\n        },\n        {\n            \"ticketId\": \"27c4f176-a1d2-46f8-804c-017222cab56b\",\n            \"ticketType\": \"VIP\",\n            \"seatNumber\": \"B-10\",\n            \"price\": 150000,\n            \"currency\": \"COP\",\n            \"status\": \"SOLD\",\n            \"statusChangedAt\": 1770003047,\n            \"countsAsRevenue\": true,\n            \"accountingValue\": 150000\n        }\n    ],\n    \"totalAmount\": 300000,\n    \"currency\": \"COP\",\n    \"createdAt\": 1770003029,\n    \"updatedAt\": 1770003055.991035267\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "default"
+		},
+		{
+			"key": "eventId",
+			"value": ""
+		},
+		{
+			"key": "orderId",
+			"value": ""
+		}
+	]
+}

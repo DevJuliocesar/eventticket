@@ -58,7 +58,7 @@ public class CreateInventoryUseCase {
                                                     .formatted(request.eventId(), request.ticketType())
                                     )
                             ))
-                            .switchIfEmpty(createInventory(eventId, event.getName(), request));
+                            .switchIfEmpty(Mono.defer(() -> createInventory(eventId, event.getName(), request)));
                 })
                 .doOnSuccess(inventory -> log.info(
                         "Inventory created successfully: eventId={}, ticketType={}, quantity={}", 
