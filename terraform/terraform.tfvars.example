@@ -1,0 +1,31 @@
+# ============================================================================
+# Archivo de ejemplo de variables de Terraform
+# ============================================================================
+# Copia este archivo a terraform.tfvars y ajusta los valores según tu entorno
+# ============================================================================
+
+# Entorno
+environment = "dev"
+
+# Región AWS
+aws_region = "us-east-1"
+
+# Aplicación
+app_name  = "eventticket"
+app_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eventticket:latest"
+app_port  = 8080
+
+# Networking
+vpc_cidr          = "10.0.0.0/16"
+enable_nat_gateway = true
+single_nat_gateway = false  # false = 1 NAT por AZ, true = 1 NAT compartido (más barato)
+
+# ECS Configuration
+ecs_cpu          = 512   # 0.5 vCPU
+ecs_memory       = 1024  # 1 GB
+ecs_desired_count = 2
+ecs_min_capacity = 1
+ecs_max_capacity = 10
+
+# Logging
+log_retention_days = 7
