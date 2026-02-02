@@ -5,17 +5,19 @@ import com.eventticket.application.dto.CreateInventoryRequest;
 import com.eventticket.application.dto.EventAvailabilityResponse;
 import com.eventticket.application.dto.EventResponse;
 import com.eventticket.application.dto.InventoryResponse;
+import com.eventticket.application.dto.PagedEventResponse;
+import com.eventticket.application.dto.PagedInventoryResponse;
 import com.eventticket.application.usecase.CreateEventUseCase;
 import com.eventticket.application.usecase.CreateInventoryUseCase;
 import com.eventticket.application.usecase.GetEventAvailabilityUseCase;
 import com.eventticket.application.usecase.GetInventoryUseCase;
+import com.eventticket.application.usecase.ListEventsUseCase;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -33,17 +35,20 @@ public class EventController {
     private final GetEventAvailabilityUseCase getEventAvailabilityUseCase;
     private final CreateInventoryUseCase createInventoryUseCase;
     private final GetInventoryUseCase getInventoryUseCase;
+    private final ListEventsUseCase listEventsUseCase;
 
     public EventController(
             CreateEventUseCase createEventUseCase,
             GetEventAvailabilityUseCase getEventAvailabilityUseCase,
             CreateInventoryUseCase createInventoryUseCase,
-            GetInventoryUseCase getInventoryUseCase
+            GetInventoryUseCase getInventoryUseCase,
+            ListEventsUseCase listEventsUseCase
     ) {
         this.createEventUseCase = createEventUseCase;
         this.getEventAvailabilityUseCase = getEventAvailabilityUseCase;
         this.createInventoryUseCase = createInventoryUseCase;
         this.getInventoryUseCase = getInventoryUseCase;
+        this.listEventsUseCase = listEventsUseCase;
     }
 
     /**
@@ -101,18 +106,42 @@ public class EventController {
     }
 
     /**
-     * Lists all ticket inventory for an event.
+     * Lists all ticket inventory for an event with pagination.
      * Returns all ticket types and their availability for the specified event.
      *
      * @param eventId Event identifier
-     * @return List of inventory responses
+     * @param page Page number (0-indexed, defaults to 0)
+     * @param pageSize Number of items per page (defaults to 10, max 100)
+     * @return Paginated inventory response
      */
     @GetMapping(
             value = "/{eventId}/inventories",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public Flux<InventoryResponse> getInventory(@PathVariable String eventId) {
-        log.info("Received get inventory request for event: {}", eventId);
-        return getInventoryUseCase.execute(eventId);
+    public Mono<PagedInventoryResponse> getInventory(
+            @PathVariable String eventId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize
+    ) {
+        log.info("Received get inventory request for event: {}, page: {}, pageSize: {}", eventId, page, pageSize);
+        return getInventoryUseCase.execute(eventId, page, pageSize);
+    }
+
+    /**
+     * Lists all events with pagination.
+     *
+     * @param page Page number (0-indexed, defaults to 0)
+     * @param pageSize Number of items per page (defaults to 10, max 100)
+     * @return Paginated event response
+     */
+    @GetMapping(
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public Mono<PagedEventResponse> listEvents(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize
+    ) {
+        log.info("Received list events request - page: {}, pageSize: {}", page, pageSize);
+        return listEventsUseCase.execute(page, pageSize);
     }
 }

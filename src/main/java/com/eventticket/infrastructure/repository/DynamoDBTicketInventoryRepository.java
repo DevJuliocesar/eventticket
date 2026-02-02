@@ -102,6 +102,50 @@ public class DynamoDBTicketInventoryRepository implements TicketInventoryReposit
     }
 
     @Override
+    public Flux<TicketInventory> findByEventId(EventId eventId, int page, int pageSize) {
+        log.debug("Finding ticket inventory for eventId: {}, page: {}, pageSize: {}", 
+                eventId.value(), page, pageSize);
+        
+        int skip = page * pageSize;
+        
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":eventId", AttributeValue.builder().s(eventId.value()).build());
+
+        QueryRequest request = QueryRequest.builder()
+                .tableName(TABLE_NAME)
+                .keyConditionExpression("eventId = :eventId")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        return Mono.fromFuture(dynamoDbClient.query(request))
+                .flatMapMany(response -> Flux.fromIterable(response.items()))
+                .map(this::fromDynamoDBItem)
+                .skip(skip)
+                .take(pageSize)
+                .doOnError(error -> log.error("Error finding ticket inventory by eventId in DynamoDB", error));
+    }
+
+    @Override
+    public Mono<Long> countByEventId(EventId eventId) {
+        log.debug("Counting ticket inventory for eventId: {}", eventId.value());
+        
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":eventId", AttributeValue.builder().s(eventId.value()).build());
+
+        QueryRequest request = QueryRequest.builder()
+                .tableName(TABLE_NAME)
+                .keyConditionExpression("eventId = :eventId")
+                .select(Select.COUNT)
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        return Mono.fromFuture(dynamoDbClient.query(request))
+                .map(response -> (long) response.count())
+                .doOnSuccess(count -> log.debug("Total inventory count for event {}: {}", eventId.value(), count))
+                .doOnError(error -> log.error("Error counting ticket inventory by eventId in DynamoDB", error));
+    }
+
+    @Override
     public Mono<TicketInventory> updateWithOptimisticLock(TicketInventory inv) {
         log.debug("Updating ticket inventory with optimistic lock: eventId={}, ticketType={}", 
                 inv.getEventId().value(), inv.getTicketType());

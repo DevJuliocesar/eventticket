@@ -59,4 +59,20 @@ public interface EventRepository {
      * @return Mono that completes when deletion is done
      */
     Mono<Void> deleteById(EventId eventId);
+
+    /**
+     * Finds all events with pagination.
+     *
+     * @param page Page number (0-indexed)
+     * @param pageSize Number of items per page
+     * @return Flux of events for the requested page
+     */
+    Flux<Event> findAll(int page, int pageSize);
+
+    /**
+     * Counts total number of events.
+     *
+     * @return Total count of events
+     */
+    Mono<Long> count();
 }

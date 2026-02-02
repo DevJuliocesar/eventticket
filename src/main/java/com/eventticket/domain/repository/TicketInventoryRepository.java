@@ -36,6 +36,24 @@ public interface TicketInventoryRepository {
     Flux<TicketInventory> findByEventId(EventId eventId);
 
     /**
+     * Finds inventory for an event with pagination.
+     *
+     * @param eventId Event identifier
+     * @param page Page number (0-indexed)
+     * @param pageSize Number of items per page
+     * @return Flux of inventory items for the requested page
+     */
+    Flux<TicketInventory> findByEventId(EventId eventId, int page, int pageSize);
+
+    /**
+     * Counts total number of inventory items for an event.
+     *
+     * @param eventId Event identifier
+     * @return Total count of inventory items
+     */
+    Mono<Long> countByEventId(EventId eventId);
+
+    /**
      * Updates inventory with optimistic locking.
      *
      * @param inventory Inventory to update

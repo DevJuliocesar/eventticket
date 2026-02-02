@@ -179,6 +179,42 @@ public class DynamoDBEventRepository implements EventRepository {
                 .doOnError(error -> log.error("Error deleting event from DynamoDB", error));
     }
 
+    @Override
+    public Flux<Event> findAll(int page, int pageSize) {
+        log.debug("Finding all events - page: {}, pageSize: {}", page, pageSize);
+        
+        int skip = page * pageSize;
+        
+        // For DynamoDB, we need to scan and skip items
+        // This is not ideal for large datasets but works for moderate sizes
+        ScanRequest request = ScanRequest.builder()
+                .tableName(TABLE_NAME)
+                .build();
+
+        return Flux.from(dynamoDbClient.scanPaginator(request))
+                .flatMap(response -> Flux.fromIterable(response.items()))
+                .map(this::fromDynamoDBItem)
+                .skip(skip)
+                .take(pageSize)
+                .doOnError(error -> log.error("Error finding all events in DynamoDB", error));
+    }
+
+    @Override
+    public Mono<Long> count() {
+        log.debug("Counting all events");
+        
+        ScanRequest request = ScanRequest.builder()
+                .tableName(TABLE_NAME)
+                .select(Select.COUNT)
+                .build();
+
+        return Flux.from(dynamoDbClient.scanPaginator(request))
+                .map(response -> (long) response.count())
+                .reduce(0L, Long::sum)
+                .doOnSuccess(count -> log.debug("Total events count: {}", count))
+                .doOnError(error -> log.error("Error counting events in DynamoDB", error));
+    }
+
     /**
      * Converts Event domain object to DynamoDB item.
      */

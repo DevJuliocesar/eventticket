@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
@@ -127,8 +128,35 @@ public class GlobalExceptionHandler {
                 )));
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleResponseStatusException(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        
+        if (status == HttpStatus.NOT_FOUND) {
+            log.warn("Resource not found: {}", ex.getReason());
+        } else {
+            log.warn("Response status exception: {} - {}", status, ex.getReason());
+        }
+        
+        return Mono.just(ResponseEntity
+                .status(status)
+                .body(ErrorResponse.of(
+                        status.value(),
+                        status.getReasonPhrase(),
+                        ex.getReason() != null ? ex.getReason() : status.getReasonPhrase()
+                )));
+    }
+
     @ExceptionHandler(Exception.class)
     public Mono<ResponseEntity<ErrorResponse>> handleGenericException(Exception ex) {
+        // Don't handle ResponseStatusException here - it's handled separately
+        if (ex instanceof ResponseStatusException) {
+            return Mono.error(ex);
+        }
+        
         log.error("Unexpected error", ex);
         return Mono.just(ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
