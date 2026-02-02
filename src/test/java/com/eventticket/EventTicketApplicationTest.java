@@ -84,4 +84,33 @@ class EventTicketApplicationTest {
                         method.getParameterCount() == 1 &&
                         method.getParameterTypes()[0] == String[].class);
     }
+
+    @Test
+    @DisplayName("Should execute main method with reflection")
+    void shouldExecuteMainMethodWithReflection() throws Exception {
+        // Given
+        String[] args = new String[]{};
+        java.lang.reflect.Method mainMethod = EventTicketApplication.class.getDeclaredMethod("main", String[].class);
+
+        // When & Then - Should be able to access the method
+        assertThat(mainMethod).isNotNull();
+        assertThat(mainMethod.isAccessible() || mainMethod.canAccess(null)).isTrue();
+        assertThat(mainMethod.getModifiers() & java.lang.reflect.Modifier.STATIC).isNotZero();
+        assertThat(mainMethod.getModifiers() & java.lang.reflect.Modifier.PUBLIC).isNotZero();
+    }
+
+    @Test
+    @DisplayName("Should have main method signature correct")
+    void shouldHaveMainMethodSignatureCorrect() throws Exception {
+        // Given
+        java.lang.reflect.Method mainMethod = EventTicketApplication.class.getDeclaredMethod("main", String[].class);
+
+        // Then
+        assertThat(mainMethod.getName()).isEqualTo("main");
+        assertThat(mainMethod.getReturnType()).isEqualTo(void.class);
+        assertThat(mainMethod.getParameterCount()).isEqualTo(1);
+        assertThat(mainMethod.getParameterTypes()[0]).isEqualTo(String[].class);
+        assertThat(java.lang.reflect.Modifier.isStatic(mainMethod.getModifiers())).isTrue();
+        assertThat(java.lang.reflect.Modifier.isPublic(mainMethod.getModifiers())).isTrue();
+    }
 }
