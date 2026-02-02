@@ -56,6 +56,7 @@ public final class TicketOrder {
 
     /**
      * Creates a new ticket order.
+     * Orders are created in AVAILABLE status and will be reserved when processed.
      */
     public static TicketOrder create(
             CustomerId customerId,
@@ -72,13 +73,26 @@ public final class TicketOrder {
                 generateOrderNumber(),
                 eventId,
                 eventName,
-                OrderStatus.RESERVED,
+                OrderStatus.AVAILABLE,
                 tickets,
                 totalAmount,
                 now,
                 now,
                 0
         );
+    }
+
+    /**
+     * Reserves the order (moves from AVAILABLE to RESERVED).
+     * This happens when the order is processed asynchronously.
+     */
+    public TicketOrder reserve() {
+        if (status != OrderStatus.AVAILABLE) {
+            throw new IllegalStateException("Only available orders can be reserved");
+        }
+        return new TicketOrder(orderId, customerId, orderNumber, eventId, eventName,
+                OrderStatus.RESERVED, tickets, totalAmount, createdAt,
+                Instant.now(), version + 1);
     }
 
     /**
@@ -95,25 +109,17 @@ public final class TicketOrder {
 
     /**
      * Marks order as sold (payment completed).
+     * Updates tickets with assigned seat numbers.
      */
-    public TicketOrder markAsSold() {
+    public TicketOrder markAsSold(List<TicketItem> updatedTickets) {
         if (status != OrderStatus.PENDING_CONFIRMATION) {
             throw new IllegalStateException("Only pending confirmation orders can be marked as sold");
         }
-        return new TicketOrder(orderId, customerId, orderNumber, eventId, eventName,
-                OrderStatus.SOLD, tickets, totalAmount, createdAt,
-                Instant.now(), version + 1);
-    }
-
-    /**
-     * Cancels the order.
-     */
-    public TicketOrder cancel() {
-        if (status == OrderStatus.SOLD || status == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot cancel sold or already cancelled orders");
+        if (updatedTickets.size() != tickets.size()) {
+            throw new IllegalArgumentException("Updated tickets count must match original tickets count");
         }
         return new TicketOrder(orderId, customerId, orderNumber, eventId, eventName,
-                OrderStatus.CANCELLED, tickets, totalAmount, createdAt,
+                OrderStatus.SOLD, updatedTickets, totalAmount, createdAt,
                 Instant.now(), version + 1);
     }
 

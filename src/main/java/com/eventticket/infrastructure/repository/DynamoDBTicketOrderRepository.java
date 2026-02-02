@@ -8,8 +8,6 @@ import com.eventticket.domain.valueobject.CustomerId;
 import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.Money;
 import com.eventticket.domain.valueobject.OrderId;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -36,14 +34,11 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
     private static final String TABLE_NAME = "TicketOrders";
 
     private final DynamoDbAsyncClient dynamoDbClient;
-    private final ObjectMapper objectMapper;
 
     public DynamoDBTicketOrderRepository(
-            DynamoDbAsyncClient dynamoDbClient,
-            ObjectMapper objectMapper
+            DynamoDbAsyncClient dynamoDbClient
     ) {
         this.dynamoDbClient = dynamoDbClient;
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -147,6 +142,25 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
                 .doOnError(error -> log.error("Error deleting ticket order from DynamoDB", error));
     }
 
+    @Override
+    public Flux<TicketOrder> findByEventId(EventId eventId) {
+        log.debug("Finding ticket orders by eventId: {}", eventId.value());
+
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":eventId", AttributeValue.builder().s(eventId.value()).build());
+
+        ScanRequest request = ScanRequest.builder()
+                .tableName(TABLE_NAME)
+                .filterExpression("eventId = :eventId")
+                .expressionAttributeValues(expressionAttributeValues)
+                .build();
+
+        return Flux.from(dynamoDbClient.scanPaginator(request))
+                .flatMap(response -> Flux.fromIterable(response.items()))
+                .map(this::fromDynamoDBItem)
+                .doOnError(error -> log.error("Error finding ticket orders by eventId in DynamoDB", error));
+    }
+
     /**
      * Converts TicketOrder domain object to DynamoDB item.
      */
@@ -160,9 +174,8 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
             item.put("eventName", AttributeValue.builder().s(order.getEventName()).build());
             item.put("status", AttributeValue.builder().s(order.getStatus().name()).build());
             
-            // Serialize tickets list as JSON
-            String ticketsJson = objectMapper.writeValueAsString(order.getTickets());
-            item.put("tickets", AttributeValue.builder().s(ticketsJson).build());
+            // Tickets are stored separately in TicketItems table, not in TicketOrders
+            // No need to serialize tickets here
             
             item.put("totalAmount", AttributeValue.builder().n(order.getTotalAmount().getAmount().toString()).build());
             item.put("totalCurrency", AttributeValue.builder().s(order.getTotalAmount().getCurrencyCode()).build());
@@ -190,9 +203,9 @@ public class DynamoDBTicketOrderRepository implements TicketOrderRepository {
             String eventName = item.get("eventName").s();
             OrderStatus status = OrderStatus.valueOf(item.get("status").s());
             
-            // Deserialize tickets list from JSON
-            String ticketsJson = item.get("tickets").s();
-            List<TicketItem> tickets = objectMapper.readValue(ticketsJson, new TypeReference<List<TicketItem>>() {});
+            // Tickets are stored separately in TicketItems table
+            // Create order with empty tickets list - tickets will be loaded separately when needed
+            List<TicketItem> tickets = List.of();
             
             BigDecimal totalAmount = new BigDecimal(item.get("totalAmount").n());
             String totalCurrency = item.get("totalCurrency").s();

@@ -2,6 +2,8 @@ package com.eventticket.domain.valueobject;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -14,6 +16,7 @@ import java.util.Objects;
  * Immutable record with rich behavior for currency operations.
  * Using Java 25 Record with compact canonical constructor.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record Money(BigDecimal amount, Currency currency) {
 
     /**
@@ -94,6 +97,7 @@ public record Money(BigDecimal amount, Currency currency) {
         return this.amount.compareTo(other.amount) < 0;
     }
 
+    @JsonIgnore
     public boolean isZero() {
         return this.amount.compareTo(BigDecimal.ZERO) == 0;
     }

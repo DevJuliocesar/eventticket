@@ -31,7 +31,19 @@ public record OrderResponse(
      * @return OrderResponse DTO
      */
     public static OrderResponse fromDomain(TicketOrder order) {
-        List<TicketItemResponse> ticketItems = order.getTickets().stream()
+        return fromDomain(order, order.getTickets());
+    }
+
+    /**
+     * Converts domain model to DTO with explicit tickets list.
+     * Used when tickets are loaded separately from TicketItems table.
+     *
+     * @param order Domain order
+     * @param tickets List of tickets (can be from separate query)
+     * @return OrderResponse DTO
+     */
+    public static OrderResponse fromDomain(TicketOrder order, List<com.eventticket.domain.model.TicketItem> tickets) {
+        List<TicketItemResponse> ticketItems = tickets.stream()
                 .map(TicketItemResponse::fromDomain)
                 .toList();
         

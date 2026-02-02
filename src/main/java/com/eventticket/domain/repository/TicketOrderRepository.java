@@ -52,4 +52,13 @@ public interface TicketOrderRepository {
      * @return Mono that completes when deletion is done
      */
     Mono<Void> deleteById(OrderId orderId);
+
+    /**
+     * Finds orders by event identifier.
+     * Used to check occupied seat numbers for seat assignment.
+     *
+     * @param eventId Event identifier
+     * @return Flux of orders
+     */
+    Flux<TicketOrder> findByEventId(com.eventticket.domain.valueobject.EventId eventId);
 }

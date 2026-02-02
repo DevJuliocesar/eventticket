@@ -10,7 +10,6 @@ public enum OrderStatus {
     CONFIRMED,              // Payment confirmed
     SOLD,                   // Successfully sold
     COMPLIMENTARY,          // Free/complimentary tickets
-    CANCELLED,              // Cancelled by user or system
     EXPIRED,                // Reservation expired
     FAILED                  // Processing failed
 }

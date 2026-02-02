@@ -159,6 +159,7 @@ public class DynamoDBTicketInventoryRepository implements TicketInventoryReposit
         item.put("totalQuantity", AttributeValue.builder().n(String.valueOf(inv.getTotalQuantity())).build());
         item.put("availableQuantity", AttributeValue.builder().n(String.valueOf(inv.getAvailableQuantity())).build());
         item.put("reservedQuantity", AttributeValue.builder().n(String.valueOf(inv.getReservedQuantity())).build());
+        item.put("soldQuantity", AttributeValue.builder().n(String.valueOf(inv.getSoldQuantity())).build());
         item.put("priceAmount", AttributeValue.builder().n(inv.getPrice().getAmount().toString()).build());
         item.put("priceCurrency", AttributeValue.builder().s(inv.getPrice().getCurrencyCode()).build());
         item.put("version", AttributeValue.builder().n(String.valueOf(inv.getVersion())).build());
@@ -177,6 +178,10 @@ public class DynamoDBTicketInventoryRepository implements TicketInventoryReposit
             int totalQuantity = Integer.parseInt(item.get("totalQuantity").n());
             int availableQuantity = Integer.parseInt(item.get("availableQuantity").n());
             int reservedQuantity = Integer.parseInt(item.get("reservedQuantity").n());
+            // Handle soldQuantity - may not exist in old records
+            int soldQuantity = item.containsKey("soldQuantity") && item.get("soldQuantity") != null
+                    ? Integer.parseInt(item.get("soldQuantity").n())
+                    : 0;
             BigDecimal priceAmount = new BigDecimal(item.get("priceAmount").n());
             String priceCurrencyCode = item.get("priceCurrency").s();
             Money price = Money.of(priceAmount, priceCurrencyCode);
@@ -185,12 +190,12 @@ public class DynamoDBTicketInventoryRepository implements TicketInventoryReposit
             // Use reflection to access private constructor
             Constructor<TicketInventory> constructor = TicketInventory.class.getDeclaredConstructor(
                     EventId.class, String.class, String.class, int.class, int.class, 
-                    int.class, Money.class, int.class
+                    int.class, int.class, Money.class, int.class
             );
             constructor.setAccessible(true);
             return constructor.newInstance(
                     eventId, ticketType, eventName, totalQuantity, 
-                    availableQuantity, reservedQuantity, price, version
+                    availableQuantity, reservedQuantity, soldQuantity, price, version
             );
         } catch (Exception e) {
             log.error("Error converting DynamoDB item to TicketInventory", e);

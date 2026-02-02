@@ -2,6 +2,8 @@ package com.eventticket.domain.model;
 
 import com.eventticket.domain.exception.InvalidTicketStateTransitionException;
 import com.eventticket.domain.valueobject.Money;
+import com.eventticket.domain.valueobject.OrderId;
+import com.eventticket.domain.valueobject.ReservationId;
 import com.eventticket.domain.valueobject.TicketId;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,6 +19,8 @@ import java.util.Objects;
 public final class TicketItem {
     
     private final TicketId ticketId;
+    private final OrderId orderId;
+    private final ReservationId reservationId;
     private final String ticketType;
     private final String seatNumber;
     private final Money price;
@@ -26,6 +30,8 @@ public final class TicketItem {
 
     private TicketItem(
             TicketId ticketId,
+            OrderId orderId,
+            ReservationId reservationId,
             String ticketType,
             String seatNumber,
             Money price,
@@ -34,6 +40,8 @@ public final class TicketItem {
             String statusChangedBy
     ) {
         this.ticketId = Objects.requireNonNull(ticketId);
+        this.orderId = orderId; // Can be null for tickets not yet associated with an order
+        this.reservationId = reservationId; // Can be null for tickets not yet associated with a reservation
         this.ticketType = Objects.requireNonNull(ticketType);
         this.seatNumber = seatNumber;
         this.price = Objects.requireNonNull(price);
@@ -44,12 +52,49 @@ public final class TicketItem {
 
     /**
      * Creates a new ticket item with AVAILABLE status.
+     * Seat number is null initially - will be assigned when ticket is SOLD or COMPLIMENTARY.
      */
-    public static TicketItem create(String ticketType, String seatNumber, Money price) {
+    public static TicketItem create(String ticketType, Money price) {
         return new TicketItem(
                 TicketId.generate(),
+                null, // OrderId will be set when ticket is added to an order
+                null, // ReservationId will be set when ticket is associated with a reservation
                 ticketType,
-                seatNumber,
+                null, // Seat number assigned only when SOLD or COMPLIMENTARY
+                price,
+                TicketStatus.AVAILABLE,
+                Instant.now(),
+                "system"
+        );
+    }
+
+    /**
+     * Creates a new ticket item with orderId.
+     */
+    public static TicketItem create(OrderId orderId, String ticketType, Money price) {
+        return new TicketItem(
+                TicketId.generate(),
+                orderId,
+                null, // ReservationId will be set when ticket is associated with a reservation
+                ticketType,
+                null, // Seat number assigned only when SOLD or COMPLIMENTARY
+                price,
+                TicketStatus.AVAILABLE,
+                Instant.now(),
+                "system"
+        );
+    }
+
+    /**
+     * Creates a new ticket item with orderId and reservationId.
+     */
+    public static TicketItem create(OrderId orderId, ReservationId reservationId, String ticketType, Money price) {
+        return new TicketItem(
+                TicketId.generate(),
+                orderId,
+                reservationId,
+                ticketType,
+                null, // Seat number assigned only when SOLD or COMPLIMENTARY
                 price,
                 TicketStatus.AVAILABLE,
                 Instant.now(),
@@ -59,12 +104,15 @@ public final class TicketItem {
 
     /**
      * Creates a complimentary (free) ticket.
+     * Seat number is null initially - will be assigned when ticket is marked as COMPLIMENTARY.
      */
-    public static TicketItem createComplimentary(String ticketType, String seatNumber, String reason) {
+    public static TicketItem createComplimentary(OrderId orderId, ReservationId reservationId, String ticketType, String reason) {
         return new TicketItem(
                 TicketId.generate(),
+                orderId,
+                reservationId,
                 ticketType,
-                seatNumber,
+                null, // Seat number assigned only when marked as COMPLIMENTARY
                 Money.zero(),
                 TicketStatus.COMPLIMENTARY,
                 Instant.now(),
@@ -79,6 +127,8 @@ public final class TicketItem {
     @JsonCreator
     public static TicketItem fromJson(
             @JsonProperty("ticketId") TicketId ticketId,
+            @JsonProperty("orderId") OrderId orderId,
+            @JsonProperty("reservationId") ReservationId reservationId,
             @JsonProperty("ticketType") String ticketType,
             @JsonProperty("seatNumber") String seatNumber,
             @JsonProperty("price") Money price,
@@ -88,6 +138,8 @@ public final class TicketItem {
     ) {
         return new TicketItem(
                 ticketId,
+                orderId,
+                reservationId,
                 ticketType,
                 seatNumber,
                 price,
@@ -103,7 +155,7 @@ public final class TicketItem {
      */
     public TicketItem reserve(String userId) {
         validateTransition(TicketStatus.RESERVED);
-        return new TicketItem(ticketId, ticketType, seatNumber, price,
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, seatNumber, price,
                 TicketStatus.RESERVED, Instant.now(), userId);
     }
 
@@ -113,7 +165,7 @@ public final class TicketItem {
      */
     public TicketItem confirmPayment(String userId) {
         validateTransition(TicketStatus.PENDING_CONFIRMATION);
-        return new TicketItem(ticketId, ticketType, seatNumber, price,
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, seatNumber, price,
                 TicketStatus.PENDING_CONFIRMATION, Instant.now(), userId);
     }
 
@@ -121,10 +173,14 @@ public final class TicketItem {
      * Transitions ticket to SOLD status (final).
      * Business Rule: Only PENDING_CONFIRMATION tickets can be sold.
      * This is a FINAL and IRREVERSIBLE state.
+     * Assigns a seat number when marking as sold.
      */
-    public TicketItem markAsSold(String userId) {
+    public TicketItem markAsSold(String userId, String assignedSeatNumber) {
         validateTransition(TicketStatus.SOLD);
-        return new TicketItem(ticketId, ticketType, seatNumber, price,
+        if (assignedSeatNumber == null || assignedSeatNumber.isBlank()) {
+            throw new IllegalArgumentException("Seat number must be provided when marking ticket as sold");
+        }
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, assignedSeatNumber, price,
                 TicketStatus.SOLD, Instant.now(), userId);
     }
 
@@ -134,18 +190,38 @@ public final class TicketItem {
      */
     public TicketItem returnToAvailable(String reason) {
         validateTransition(TicketStatus.AVAILABLE);
-        return new TicketItem(ticketId, ticketType, seatNumber, price,
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, seatNumber, price,
                 TicketStatus.AVAILABLE, Instant.now(), "system:" + reason);
     }
 
     /**
      * Marks ticket as complimentary (final).
      * Business Rule: Can be set from any non-final state.
+     * Assigns a seat number when marking as complimentary.
      */
-    public TicketItem markAsComplimentary(String reason) {
+    public TicketItem markAsComplimentary(String reason, String assignedSeatNumber) {
         validateTransition(TicketStatus.COMPLIMENTARY);
-        return new TicketItem(ticketId, ticketType, seatNumber, Money.zero(),
+        if (assignedSeatNumber == null || assignedSeatNumber.isBlank()) {
+            throw new IllegalArgumentException("Seat number must be provided when marking ticket as complimentary");
+        }
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, assignedSeatNumber, Money.zero(),
                 TicketStatus.COMPLIMENTARY, Instant.now(), "system:" + reason);
+    }
+
+    /**
+     * Associates ticket with an order.
+     */
+    public TicketItem withOrderId(OrderId orderId) {
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, seatNumber, price,
+                status, statusChangedAt, statusChangedBy);
+    }
+
+    /**
+     * Associates ticket with a reservation.
+     */
+    public TicketItem withReservationId(ReservationId reservationId) {
+        return new TicketItem(ticketId, orderId, reservationId, ticketType, seatNumber, price,
+                status, statusChangedAt, statusChangedBy);
     }
 
     /**
@@ -170,6 +246,8 @@ public final class TicketItem {
 
     // Getters
     public TicketId getTicketId() { return ticketId; }
+    public OrderId getOrderId() { return orderId; }
+    public ReservationId getReservationId() { return reservationId; }
     public String getTicketType() { return ticketType; }
     public String getSeatNumber() { return seatNumber; }
     public Money getPrice() { return price; }

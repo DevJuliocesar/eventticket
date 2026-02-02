@@ -14,6 +14,7 @@ public record InventoryResponse(
         Integer totalQuantity,
         Integer availableQuantity,
         Integer reservedQuantity,
+        Integer soldQuantity,
         BigDecimal priceAmount,
         String priceCurrency,
         Integer version
@@ -26,6 +27,7 @@ public record InventoryResponse(
                 inventory.getTotalQuantity(),
                 inventory.getAvailableQuantity(),
                 inventory.getReservedQuantity(),
+                inventory.getSoldQuantity(),
                 inventory.getPrice().getAmount(),
                 inventory.getPrice().getCurrencyCode(),
                 inventory.getVersion()

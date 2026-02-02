@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
  * This is called by the SQS consumer to process orders:
  * - Validates availability
  * - Updates inventory
- * - Changes order status from RESERVED to PENDING_CONFIRMATION
+ * - Changes order status from AVAILABLE to RESERVED
  */
 @Service
 public class ProcessTicketOrderUseCase {
@@ -42,13 +42,13 @@ public class ProcessTicketOrderUseCase {
 
         return orderRepository.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Order not found: " + orderId)))
-                .filter(order -> order.getStatus() == OrderStatus.RESERVED)
+                .filter(order -> order.getStatus() == OrderStatus.AVAILABLE)
                 .switchIfEmpty(Mono.error(new IllegalStateException(
-                        "Order is not in RESERVED status: " + orderId)))
+                        "Order is not in AVAILABLE status: " + orderId)))
                 .flatMap(this::validateAndUpdateInventory)
                 .flatMap(order -> {
-                    // Change status from RESERVED to PENDING_CONFIRMATION
-                    TicketOrder updatedOrder = order.confirm();
+                    // Change status from AVAILABLE to RESERVED
+                    TicketOrder updatedOrder = order.reserve();
                     return orderRepository.save(updatedOrder);
                 })
                 .doOnSuccess(order -> log.info(

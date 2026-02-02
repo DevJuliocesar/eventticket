@@ -19,6 +19,7 @@ public final class TicketInventory {
     private final int totalQuantity;
     private final int availableQuantity;
     private final int reservedQuantity;
+    private final int soldQuantity;
     private final Money price;
     private final int version;
 
@@ -29,6 +30,7 @@ public final class TicketInventory {
             int totalQuantity,
             int availableQuantity,
             int reservedQuantity,
+            int soldQuantity,
             Money price,
             int version
     ) {
@@ -38,6 +40,7 @@ public final class TicketInventory {
         this.totalQuantity = totalQuantity;
         this.availableQuantity = availableQuantity;
         this.reservedQuantity = reservedQuantity;
+        this.soldQuantity = soldQuantity;
         this.price = Objects.requireNonNull(price);
         this.version = version;
     }
@@ -59,6 +62,7 @@ public final class TicketInventory {
                 totalQuantity,
                 totalQuantity,
                 0,
+                0,
                 price,
                 0
         );
@@ -77,7 +81,7 @@ public final class TicketInventory {
         
         return new TicketInventory(eventId, ticketType, eventName, totalQuantity,
                 availableQuantity - quantity, reservedQuantity + quantity,
-                price, version + 1);
+                soldQuantity, price, version + 1);
     }
 
     /**
@@ -93,7 +97,7 @@ public final class TicketInventory {
         
         return new TicketInventory(eventId, ticketType, eventName, totalQuantity,
                 availableQuantity, reservedQuantity - quantity,
-                price, version + 1);
+                soldQuantity + quantity, price, version + 1);
     }
 
     /**
@@ -109,7 +113,7 @@ public final class TicketInventory {
         
         return new TicketInventory(eventId, ticketType, eventName, totalQuantity,
                 availableQuantity + quantity, reservedQuantity - quantity,
-                price, version + 1);
+                soldQuantity, price, version + 1);
     }
 
     /**
@@ -126,6 +130,7 @@ public final class TicketInventory {
     public int getTotalQuantity() { return totalQuantity; }
     public int getAvailableQuantity() { return availableQuantity; }
     public int getReservedQuantity() { return reservedQuantity; }
+    public int getSoldQuantity() { return soldQuantity; }
     public Money getPrice() { return price; }
     public int getVersion() { return version; }
 
@@ -143,7 +148,7 @@ public final class TicketInventory {
 
     @Override
     public String toString() {
-        return "TicketInventory[eventId=%s, type=%s, available=%d]"
-                .formatted(eventId, ticketType, availableQuantity);
+        return "TicketInventory[eventId=%s, type=%s, available=%d, reserved=%d, sold=%d]"
+                .formatted(eventId, ticketType, availableQuantity, reservedQuantity, soldQuantity);
     }
 }

@@ -1,7 +1,6 @@
 package com.eventticket.infrastructure.scheduler;
 
 import com.eventticket.application.usecase.ReleaseExpiredReservationsUseCase;
-import com.eventticket.infrastructure.config.ReservationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,14 +17,11 @@ public class ReservationExpirationScheduler {
     private static final Logger log = LoggerFactory.getLogger(ReservationExpirationScheduler.class);
 
     private final ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase;
-    private final ReservationProperties reservationProperties;
 
     public ReservationExpirationScheduler(
-            ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase,
-            ReservationProperties reservationProperties
+            ReleaseExpiredReservationsUseCase releaseExpiredReservationsUseCase
     ) {
         this.releaseExpiredReservationsUseCase = releaseExpiredReservationsUseCase;
-        this.reservationProperties = reservationProperties;
     }
 
     /**

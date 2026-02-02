@@ -7,6 +7,7 @@ import com.eventticket.domain.model.TicketItem;
 import com.eventticket.domain.model.TicketOrder;
 import com.eventticket.domain.model.TicketReservation;
 import com.eventticket.domain.repository.TicketInventoryRepository;
+import com.eventticket.domain.repository.TicketItemRepository;
 import com.eventticket.domain.repository.TicketOrderRepository;
 import com.eventticket.domain.repository.TicketReservationRepository;
 import com.eventticket.domain.valueobject.CustomerId;
@@ -37,6 +38,7 @@ public class CreateTicketOrderUseCase {
 
     private final TicketOrderRepository orderRepository;
     private final TicketInventoryRepository inventoryRepository;
+    private final TicketItemRepository ticketItemRepository;
     private final TicketReservationRepository reservationRepository;
     private final SqsOrderPublisher sqsOrderPublisher;
     private final ReservationProperties reservationProperties;
@@ -44,12 +46,14 @@ public class CreateTicketOrderUseCase {
     public CreateTicketOrderUseCase(
             TicketOrderRepository orderRepository,
             TicketInventoryRepository inventoryRepository,
+            TicketItemRepository ticketItemRepository,
             TicketReservationRepository reservationRepository,
             SqsOrderPublisher sqsOrderPublisher,
             ReservationProperties reservationProperties
     ) {
         this.orderRepository = orderRepository;
         this.inventoryRepository = inventoryRepository;
+        this.ticketItemRepository = ticketItemRepository;
         this.reservationRepository = reservationRepository;
         this.sqsOrderPublisher = sqsOrderPublisher;
         this.reservationProperties = reservationProperties;
@@ -72,7 +76,15 @@ public class CreateTicketOrderUseCase {
                 .flatMap(inventory -> reserveTickets(inventory, request.quantity()))
                 .flatMap(inventory -> createOrder(customerId, eventId, request, inventory))
                 .flatMap(order -> createReservation(order, request.ticketType(), request.quantity())
-                        .thenReturn(order))
+                        .flatMap(reservation -> {
+                            // Save tickets to TicketItems table with both orderId and reservationId
+                            List<TicketItem> ticketsWithIds = order.getTickets().stream()
+                                    .map(ticket -> ticket.withOrderId(order.getOrderId())
+                                            .withReservationId(reservation.getReservationId()))
+                                    .toList();
+                            return ticketItemRepository.saveAll(ticketsWithIds)
+                                    .then(Mono.just(order));
+                        }))
                 .flatMap(order -> {
                     // Enqueue order to SQS for asynchronous processing
                     OrderMessage message = OrderMessage.of(
@@ -85,7 +97,12 @@ public class CreateTicketOrderUseCase {
                     return sqsOrderPublisher.publishOrder(message)
                             .thenReturn(order);
                 })
-                .map(OrderResponse::fromDomain)
+                .flatMap(order -> 
+                    // Load tickets from TicketItems table for response
+                    ticketItemRepository.findByOrderId(order.getOrderId())
+                            .collectList()
+                            .map(tickets -> OrderResponse.fromDomain(order, tickets))
+                )
                 .doOnSuccess(response -> log.info(
                         "Order created and enqueued successfully: {}", response.orderId()))
                 .doOnError(error -> log.error("Error creating order", error));
@@ -128,8 +145,9 @@ public class CreateTicketOrderUseCase {
     }
 
     private List<TicketItem> createTicketItems(String ticketType, int quantity, Money price) {
+        // Create tickets without seat numbers - they will be assigned when SOLD or COMPLIMENTARY
         return IntStream.range(0, quantity)
-                .mapToObj(i -> TicketItem.create(ticketType, generateSeatNumber(i), price))
+                .mapToObj(i -> TicketItem.create(ticketType, price))
                 .toList();
     }
 
@@ -149,11 +167,5 @@ public class CreateTicketOrderUseCase {
         
         log.debug("Created reservation with timeout: {} minutes", timeoutMinutes);
         return reservationRepository.save(reservation);
-    }
-
-    private String generateSeatNumber(int index) {
-        char row = (char) ('A' + (index / 10));
-        int seat = (index % 10) + 1;
-        return "%c-%d".formatted(row, seat);
     }
 }

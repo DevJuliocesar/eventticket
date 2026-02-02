@@ -1,10 +1,12 @@
 package com.eventticket.infrastructure.api;
 
+import com.eventticket.application.dto.ConfirmOrderRequest;
 import com.eventticket.application.dto.CreateOrderRequest;
 import com.eventticket.application.dto.OrderResponse;
 import com.eventticket.application.usecase.ConfirmTicketOrderUseCase;
 import com.eventticket.application.usecase.CreateTicketOrderUseCase;
 import com.eventticket.application.usecase.GetTicketOrderUseCase;
+import com.eventticket.application.usecase.MarkOrderAsSoldUseCase;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,15 +29,18 @@ public class TicketOrderController {
     private final CreateTicketOrderUseCase createOrderUseCase;
     private final ConfirmTicketOrderUseCase confirmOrderUseCase;
     private final GetTicketOrderUseCase getOrderUseCase;
+    private final MarkOrderAsSoldUseCase markOrderAsSoldUseCase;
 
     public TicketOrderController(
             CreateTicketOrderUseCase createOrderUseCase,
             ConfirmTicketOrderUseCase confirmOrderUseCase,
-            GetTicketOrderUseCase getOrderUseCase
+            GetTicketOrderUseCase getOrderUseCase,
+            MarkOrderAsSoldUseCase markOrderAsSoldUseCase
     ) {
         this.createOrderUseCase = createOrderUseCase;
         this.confirmOrderUseCase = confirmOrderUseCase;
         this.getOrderUseCase = getOrderUseCase;
+        this.markOrderAsSoldUseCase = markOrderAsSoldUseCase;
     }
 
     /**
@@ -70,17 +75,39 @@ public class TicketOrderController {
     }
 
     /**
-     * Confirms an order.
+     * Confirms an order with customer payment information.
      *
      * @param orderId Order identifier
+     * @param request Customer payment information
      * @return Confirmed order response
      */
     @PostMapping(
             value = "/{orderId}/confirm",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public Mono<OrderResponse> confirmOrder(@PathVariable String orderId) {
-        log.info("Received confirm order request for orderId: {}", orderId);
-        return confirmOrderUseCase.execute(orderId);
+    public Mono<OrderResponse> confirmOrder(
+            @PathVariable String orderId,
+            @Valid @RequestBody ConfirmOrderRequest request
+    ) {
+        log.info("Received confirm order request for orderId: {} with customer info", orderId);
+        return confirmOrderUseCase.execute(orderId, request);
+    }
+
+    /**
+     * Marks an order as sold (payment completed).
+     * Assigns unique seat numbers to tickets and updates inventory.
+     * Order must be in PENDING_CONFIRMATION status.
+     *
+     * @param orderId Order identifier
+     * @return Sold order response
+     */
+    @PostMapping(
+            value = "/{orderId}/mark-as-sold",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public Mono<OrderResponse> markOrderAsSold(@PathVariable String orderId) {
+        log.info("Received mark order as sold request for orderId: {}", orderId);
+        return markOrderAsSoldUseCase.execute(orderId);
     }
 }
