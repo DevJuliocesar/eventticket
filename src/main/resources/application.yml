@@ -81,7 +81,7 @@ logging:
 # Application Configuration
 application:
   reservation:
-    timeout-minutes: 10
+    timeout-minutes: 2
     check-interval-ms: 60000  # Check every minute for expired reservations
   inventory:
     max-retry-attempts: 3

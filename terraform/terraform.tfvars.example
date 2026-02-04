@@ -20,12 +20,20 @@ vpc_cidr          = "10.0.0.0/16"
 enable_nat_gateway = true
 single_nat_gateway = false  # false = 1 NAT por AZ, true = 1 NAT compartido (más barato)
 
-# ECS Configuration
-ecs_cpu          = 512   # 0.5 vCPU
-ecs_memory       = 1024  # 1 GB
-ecs_desired_count = 2
-ecs_min_capacity = 1
-ecs_max_capacity = 10
+# App Runner Configuration (Migrado de ECS)
+apprunner_cpu           = "0.5 vCPU"  # Opciones: 0.25, 0.5, 1, 2, 4 vCPU
+apprunner_memory        = "1 GB"      # Opciones: 0.5, 1, 2, 3, 4, 6, 8, 12 GB
+apprunner_min_size      = 1
+apprunner_max_size      = 10
+apprunner_max_concurrency = 100
+apprunner_auto_deploy   = true        # Auto-deploy cuando se actualiza imagen
+
+# ECS Configuration (Comentado - Mantener para referencia o rollback)
+# ecs_cpu          = 512   # 0.5 vCPU
+# ecs_memory       = 1024  # 1 GB
+# ecs_desired_count = 2
+# ecs_min_capacity = 1
+# ecs_max_capacity = 10
 
 # Logging
 log_retention_days = 7
