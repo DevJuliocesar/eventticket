@@ -1,11 +1,13 @@
 package com.eventticket.infrastructure.api;
 
+import com.eventticket.application.dto.ComplimentaryOrderRequest;
 import com.eventticket.application.dto.ConfirmOrderRequest;
 import com.eventticket.application.dto.CreateOrderRequest;
 import com.eventticket.application.dto.OrderResponse;
 import com.eventticket.application.usecase.ConfirmTicketOrderUseCase;
 import com.eventticket.application.usecase.CreateTicketOrderUseCase;
 import com.eventticket.application.usecase.GetTicketOrderUseCase;
+import com.eventticket.application.usecase.MarkOrderAsComplimentaryUseCase;
 import com.eventticket.application.usecase.MarkOrderAsSoldUseCase;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -30,17 +32,20 @@ public class TicketOrderController {
     private final ConfirmTicketOrderUseCase confirmOrderUseCase;
     private final GetTicketOrderUseCase getOrderUseCase;
     private final MarkOrderAsSoldUseCase markOrderAsSoldUseCase;
+    private final MarkOrderAsComplimentaryUseCase markOrderAsComplimentaryUseCase;
 
     public TicketOrderController(
             CreateTicketOrderUseCase createOrderUseCase,
             ConfirmTicketOrderUseCase confirmOrderUseCase,
             GetTicketOrderUseCase getOrderUseCase,
-            MarkOrderAsSoldUseCase markOrderAsSoldUseCase
+            MarkOrderAsSoldUseCase markOrderAsSoldUseCase,
+            MarkOrderAsComplimentaryUseCase markOrderAsComplimentaryUseCase
     ) {
         this.createOrderUseCase = createOrderUseCase;
         this.confirmOrderUseCase = confirmOrderUseCase;
         this.getOrderUseCase = getOrderUseCase;
         this.markOrderAsSoldUseCase = markOrderAsSoldUseCase;
+        this.markOrderAsComplimentaryUseCase = markOrderAsComplimentaryUseCase;
     }
 
     /**
@@ -109,5 +114,29 @@ public class TicketOrderController {
     public Mono<OrderResponse> markOrderAsSold(@PathVariable String orderId) {
         log.info("Received mark order as sold request for orderId: {}", orderId);
         return markOrderAsSoldUseCase.execute(orderId);
+    }
+
+    /**
+     * Marks an order as complimentary (free tickets).
+     * Assigns unique seat numbers to tickets and adjusts inventory.
+     * Order can be in AVAILABLE, RESERVED, or PENDING_CONFIRMATION status.
+     * Business Rule: COMPLIMENTARY is final but NOT counted as revenue.
+     *
+     * @param orderId Order identifier
+     * @param request Reason for marking as complimentary
+     * @return Complimentary order response
+     */
+    @PostMapping(
+            value = "/{orderId}/mark-as-complimentary",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public Mono<OrderResponse> markOrderAsComplimentary(
+            @PathVariable String orderId,
+            @Valid @RequestBody ComplimentaryOrderRequest request
+    ) {
+        log.info("Received mark order as complimentary request for orderId: {}, reason: {}",
+                orderId, request.reason());
+        return markOrderAsComplimentaryUseCase.execute(orderId, request.reason());
     }
 }

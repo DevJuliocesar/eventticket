@@ -252,6 +252,117 @@ class TicketOrderTest {
     }
 
     @Test
+    @DisplayName("Should mark AVAILABLE order as complimentary")
+    void shouldMarkAvailableOrderAsComplimentary() {
+        // Given
+        TicketItem originalTicket = TicketItem.create("VIP", Money.of(100.0, "USD"));
+        TicketOrder order = TicketOrder.create(
+                CustomerId.of("customer-123"),
+                EventId.generate(),
+                "Test Event",
+                List.of(originalTicket)
+        );
+
+        List<TicketItem> complimentaryTickets = List.of(
+                originalTicket.markAsComplimentary("VIP guest", "A-1")
+        );
+
+        // When
+        TicketOrder complimentary = order.markAsComplimentary(complimentaryTickets);
+
+        // Then
+        assertThat(complimentary.getStatus()).isEqualTo(OrderStatus.COMPLIMENTARY);
+        assertThat(complimentary.getTotalAmount().isZero()).isTrue();
+        assertThat(complimentary.getVersion()).isEqualTo(order.getVersion() + 1);
+        assertThat(complimentary.getTickets()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Should mark RESERVED order as complimentary")
+    void shouldMarkReservedOrderAsComplimentary() {
+        // Given
+        TicketItem originalTicket = TicketItem.create("VIP", Money.of(100.0, "USD"));
+        TicketOrder order = TicketOrder.create(
+                CustomerId.of("customer-123"),
+                EventId.generate(),
+                "Test Event",
+                List.of(originalTicket)
+        ).reserve();
+
+        List<TicketItem> complimentaryTickets = List.of(
+                originalTicket.reserve("user-123").markAsComplimentary("promotional", "A-1")
+        );
+
+        // When
+        TicketOrder complimentary = order.markAsComplimentary(complimentaryTickets);
+
+        // Then
+        assertThat(complimentary.getStatus()).isEqualTo(OrderStatus.COMPLIMENTARY);
+        assertThat(complimentary.getTotalAmount().isZero()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should mark PENDING_CONFIRMATION order as complimentary")
+    void shouldMarkPendingConfirmationOrderAsComplimentary() {
+        // Given
+        TicketItem originalTicket = TicketItem.create("VIP", Money.of(100.0, "USD"));
+        TicketOrder order = TicketOrder.create(
+                CustomerId.of("customer-123"),
+                EventId.generate(),
+                "Test Event",
+                List.of(originalTicket)
+        ).reserve().confirm();
+
+        List<TicketItem> complimentaryTickets = List.of(
+                originalTicket.reserve("user").confirmPayment("user").markAsComplimentary("upgrade", "A-1")
+        );
+
+        // When
+        TicketOrder complimentary = order.markAsComplimentary(complimentaryTickets);
+
+        // Then
+        assertThat(complimentary.getStatus()).isEqualTo(OrderStatus.COMPLIMENTARY);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when marking SOLD order as complimentary")
+    void shouldThrowExceptionWhenMarkingSoldOrderAsComplimentary() {
+        // Given
+        TicketItem originalTicket = TicketItem.create("VIP", Money.of(100.0, "USD"));
+        List<TicketItem> soldTickets = List.of(
+                originalTicket.reserve("u").confirmPayment("u").markAsSold("u", "A-1")
+        );
+        TicketOrder order = TicketOrder.create(
+                CustomerId.of("customer-123"),
+                EventId.generate(),
+                "Test Event",
+                List.of(originalTicket)
+        ).reserve().confirm().markAsSold(soldTickets);
+
+        // When & Then
+        assertThatThrownBy(() -> order.markAsComplimentary(soldTickets))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot mark order as complimentary");
+    }
+
+    @Test
+    @DisplayName("Should throw exception when marking as complimentary with empty tickets")
+    void shouldThrowExceptionWhenMarkingAsComplimentaryWithEmptyTickets() {
+        // Given
+        TicketOrder order = TicketOrder.create(
+                CustomerId.of("customer-123"),
+                EventId.generate(),
+                "Test Event",
+                List.of(TicketItem.create("VIP", Money.of(100.0, "USD")))
+        );
+
+        // When & Then
+        assertThatThrownBy(() -> order.markAsComplimentary(List.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Updated tickets list cannot be empty");
+    }
+
+    @Test
     @DisplayName("Should handle order with zero tickets")
     void shouldHandleOrderWithZeroTickets() {
         // Given

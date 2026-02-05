@@ -129,6 +129,26 @@ public final class TicketOrder {
     }
 
     /**
+     * Marks order as complimentary (free tickets).
+     * Business Rule: COMPLIMENTARY is final but not counted as revenue.
+     * Can be applied from AVAILABLE, RESERVED, or PENDING_CONFIRMATION status.
+     * Updates tickets with assigned seat numbers and sets total amount to zero.
+     */
+    public TicketOrder markAsComplimentary(List<TicketItem> updatedTickets) {
+        if (status == OrderStatus.SOLD || status == OrderStatus.COMPLIMENTARY 
+                || status == OrderStatus.EXPIRED || status == OrderStatus.FAILED) {
+            throw new IllegalStateException(
+                    "Cannot mark order as complimentary from %s status".formatted(status));
+        }
+        if (updatedTickets.isEmpty()) {
+            throw new IllegalArgumentException("Updated tickets list cannot be empty");
+        }
+        return new TicketOrder(orderId, customerId, orderNumber, eventId, eventName,
+                OrderStatus.COMPLIMENTARY, updatedTickets, Money.zero(), createdAt,
+                Instant.now(), version + 1);
+    }
+
+    /**
      * Marks order as expired (reservation timeout).
      */
     public TicketOrder markAsExpired() {

@@ -1,5 +1,6 @@
 package com.eventticket.infrastructure.api;
 
+import com.eventticket.application.dto.ComplimentaryOrderRequest;
 import com.eventticket.application.dto.ConfirmOrderRequest;
 import com.eventticket.application.dto.CreateOrderRequest;
 import com.eventticket.application.dto.OrderResponse;
@@ -8,6 +9,7 @@ import com.eventticket.domain.model.OrderStatus;
 import com.eventticket.application.usecase.ConfirmTicketOrderUseCase;
 import com.eventticket.application.usecase.CreateTicketOrderUseCase;
 import com.eventticket.application.usecase.GetTicketOrderUseCase;
+import com.eventticket.application.usecase.MarkOrderAsComplimentaryUseCase;
 import com.eventticket.application.usecase.MarkOrderAsSoldUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,9 @@ class TicketOrderControllerTest {
 
     @Mock
     private MarkOrderAsSoldUseCase markOrderAsSoldUseCase;
+
+    @Mock
+    private MarkOrderAsComplimentaryUseCase markOrderAsComplimentaryUseCase;
 
     @InjectMocks
     private TicketOrderController controller;
@@ -246,6 +251,62 @@ class TicketOrderControllerTest {
         // When & Then
         webTestClient.post()
                 .uri("/api/v1/orders/{orderId}/mark-as-sold", orderId)
+                .exchange()
+                .expectStatus().is5xxServerError();
+    }
+
+    @Test
+    @DisplayName("Should mark order as complimentary successfully")
+    void shouldMarkOrderAsComplimentarySuccessfully() {
+        // Given
+        String orderId = "order-123";
+        ComplimentaryOrderRequest request = new ComplimentaryOrderRequest("VIP guest");
+
+        OrderResponse complimentaryResponse = new OrderResponse(
+                "order-123",
+                "customer-456",
+                "ORD-123456",
+                "event-789",
+                "Test Event",
+                OrderStatus.COMPLIMENTARY,
+                List.of(),
+                new BigDecimal("0.00"),
+                "USD",
+                Instant.now(),
+                Instant.now()
+        );
+
+        when(markOrderAsComplimentaryUseCase.execute(orderId, "VIP guest"))
+                .thenReturn(Mono.just(complimentaryResponse));
+
+        // When & Then
+        webTestClient.post()
+                .uri("/api/v1/orders/{orderId}/mark-as-complimentary", orderId)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(OrderResponse.class)
+                .value(response -> {
+                    assertThat(response.orderId()).isEqualTo("order-123");
+                    assertThat(response.status()).isEqualTo(OrderStatus.COMPLIMENTARY);
+                    assertThat(response.totalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
+                });
+    }
+
+    @Test
+    @DisplayName("Should handle error when marking order as complimentary fails")
+    void shouldHandleErrorWhenMarkingOrderAsComplimentaryFails() {
+        // Given
+        String orderId = "order-123";
+        ComplimentaryOrderRequest request = new ComplimentaryOrderRequest("reason");
+
+        when(markOrderAsComplimentaryUseCase.execute(orderId, "reason"))
+                .thenReturn(Mono.error(new IllegalStateException("Order cannot be marked as complimentary")));
+
+        // When & Then
+        webTestClient.post()
+                .uri("/api/v1/orders/{orderId}/mark-as-complimentary", orderId)
+                .bodyValue(request)
                 .exchange()
                 .expectStatus().is5xxServerError();
     }
