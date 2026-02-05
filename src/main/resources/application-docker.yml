@@ -10,6 +10,8 @@ aws:
     endpoint: http://localstack:4566
   sqs:
     endpoint: http://localstack:4566
+  sns:
+    endpoint: http://localstack:4566
 
 logging:
   level:

@@ -13,11 +13,13 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Publisher for sending order messages to SQS queue.
+ * Publisher for sending order messages directly to SQS queue.
  * Functional Requirement #3: Asynchronous order processing.
+ * Note: SnsOrderPublisher is now the @Primary implementation.
+ * This class is kept as a fallback/alternative publisher.
  */
 @Component
-public class SqsOrderPublisher {
+public class SqsOrderPublisher implements OrderMessagePublisher {
 
     private static final Logger log = LoggerFactory.getLogger(SqsOrderPublisher.class);
 
@@ -41,6 +43,7 @@ public class SqsOrderPublisher {
      * @param message Order message to publish
      * @return Mono that completes when message is sent
      */
+    @Override
     public Mono<Void> publishOrder(OrderMessage message) {
         return Mono.fromCallable(() -> {
                     try {

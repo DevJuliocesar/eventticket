@@ -20,6 +20,7 @@ services:
       - AWS_ENDPOINT_OVERRIDE=http://localstack:4566
       - AWS_DYNAMODB_ENDPOINT=http://localstack:4566
       - AWS_SQS_ENDPOINT=http://localstack:4566
+      - AWS_SNS_ENDPOINT=http://localstack:4566
       - LOCALSTACK_HOSTNAME=localstack
       - JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     depends_on:
@@ -52,7 +53,7 @@ services:
       - "4566:4566"            # LocalStack Gateway (all services)
       - "4510-4559:4510-4559"  # External services
     environment:
-      - SERVICES=dynamodb,sqs
+      - SERVICES=dynamodb,sqs,sns
       - DEBUG=1
       - DATA_DIR=/var/lib/localstack/data
       - DOCKER_HOST=unix:///var/run/docker.sock

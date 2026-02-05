@@ -347,7 +347,28 @@ else
 fi
 
 echo ""
-echo "=== 📨 Creating SQS Queues ==="
+echo "=== Creating SNS Topics ==="
+echo ""
+
+# ==========================================
+# SNS Topic: ticket-order-topic (Order Events Fan-out)
+# ==========================================
+echo "Creating SNS topic: ticket-order-topic"
+TOPIC_ARN=$(aws --endpoint-url http://localhost:4566 sns create-topic \
+    --name ticket-order-topic \
+    --tags Key=Environment,Value=Development Key=Service,Value=EventTicket \
+    --output text --query 'TopicArn' \
+    2>/dev/null)
+
+if [ -n "$TOPIC_ARN" ]; then
+    echo "  Topic 'ticket-order-topic' created: $TOPIC_ARN"
+else
+    echo "  Topic 'ticket-order-topic' already exists or error"
+    TOPIC_ARN="arn:aws:sns:us-east-1:000000000000:ticket-order-topic"
+fi
+
+echo ""
+echo "=== Creating SQS Queues ==="
 echo ""
 
 # Main queue for ticket orders
@@ -442,6 +463,39 @@ aws --endpoint-url http://localhost:4566 sqs create-queue \
 echo "✓ FIFO queue 'ticket-order-fifo.fifo' created"
 
 echo ""
+echo "=== Subscribing SQS Queues to SNS Topics ==="
+echo ""
+
+# Get the SQS queue ARN for ticket-order-queue
+ORDER_QUEUE_URL=$(aws --endpoint-url http://localhost:4566 sqs get-queue-url \
+    --queue-name ticket-order-queue \
+    --output text --query 'QueueUrl' 2>/dev/null)
+
+if [ -n "$ORDER_QUEUE_URL" ]; then
+    ORDER_QUEUE_ARN=$(aws --endpoint-url http://localhost:4566 sqs get-queue-attributes \
+        --queue-url "$ORDER_QUEUE_URL" \
+        --attribute-names QueueArn \
+        --output text --query 'Attributes.QueueArn' 2>/dev/null)
+
+    if [ -n "$ORDER_QUEUE_ARN" ]; then
+        # Subscribe SQS to SNS with raw message delivery
+        SUBSCRIPTION_ARN=$(aws --endpoint-url http://localhost:4566 sns subscribe \
+            --topic-arn "$TOPIC_ARN" \
+            --protocol sqs \
+            --notification-endpoint "$ORDER_QUEUE_ARN" \
+            --attributes '{"RawMessageDelivery":"true"}' \
+            --output text --query 'SubscriptionArn' \
+            2>/dev/null)
+        echo "  SQS 'ticket-order-queue' subscribed to SNS 'ticket-order-topic'"
+        echo "  Subscription ARN: $SUBSCRIPTION_ARN"
+    else
+        echo "  Could not get queue ARN for ticket-order-queue"
+    fi
+else
+    echo "  Could not find ticket-order-queue"
+fi
+
+echo ""
 echo "===  Listing Created Resources ==="
 echo ""
 
@@ -454,12 +508,24 @@ echo ""
 echo "SQS Queues:"
 aws --endpoint-url http://localhost:4566 sqs list-queues --output table
 
+# List SNS topics
+echo ""
+echo "SNS Topics:"
+aws --endpoint-url http://localhost:4566 sns list-topics --output table
+
+# List SNS subscriptions
+echo ""
+echo "SNS Subscriptions:"
+aws --endpoint-url http://localhost:4566 sns list-subscriptions --output table
+
 echo ""
 echo "===  LocalStack Initialization Completed Successfully ==="
 echo ""
 echo " Summary:"
 echo "  - DynamoDB: 8 tables created (Events, TicketOrders, TicketInventory, TicketReservations, TicketStateTransitionAudit, TicketItems, SeatReservations, CustomerInfo)"
+echo "  - SNS: 1 topic created (ticket-order-topic)"
 echo "  - SQS: 5 queues created (ticket-order, payment, notification, dlq, fifo)"
+echo "  - SNS->SQS: 1 subscription (ticket-order-topic -> ticket-order-queue)"
 echo ""
 echo "🔗 Access:"
 echo "  - LocalStack Gateway: http://localhost:4566"

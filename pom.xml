@@ -81,6 +81,13 @@
             <version>${aws.sdk.version}</version>
         </dependency>
 
+        <!-- AWS SDK v2 - SNS (Pub/Sub for event-driven messaging) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sns</artifactId>
+            <version>${aws.sdk.version}</version>
+        </dependency>
+
         <!-- AWS SDK v2 - Netty Async HTTP Client -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

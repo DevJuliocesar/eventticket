@@ -16,7 +16,7 @@ import com.eventticket.domain.valueobject.Money;
 import com.eventticket.domain.valueobject.OrderId;
 import com.eventticket.infrastructure.config.ReservationProperties;
 import com.eventticket.infrastructure.messaging.OrderMessage;
-import com.eventticket.infrastructure.messaging.SqsOrderPublisher;
+import com.eventticket.infrastructure.messaging.OrderMessagePublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ class CreateTicketOrderUseCaseTest {
     private TicketReservationRepository reservationRepository;
 
     @Mock
-    private SqsOrderPublisher sqsOrderPublisher;
+    private OrderMessagePublisher orderMessagePublisher;
 
     @Mock
     private ReservationProperties reservationProperties;
@@ -113,7 +113,7 @@ class CreateTicketOrderUseCaseTest {
     }
 
     @Test
-    @DisplayName("Should create order successfully")
+    @DisplayName("Should create order and publish to SNS successfully")
     void shouldCreateOrderSuccessfully() {
         // Given
         TicketInventory reservedInventory = testInventory.reserve(2);
@@ -132,7 +132,7 @@ class CreateTicketOrderUseCaseTest {
                 .thenReturn(Mono.just(testReservation));
         when(ticketItemRepository.saveAll(any(List.class)))
                 .thenReturn(Flux.fromIterable(ticketsWithIds));
-        when(sqsOrderPublisher.publishOrder(any(OrderMessage.class)))
+        when(orderMessagePublisher.publishOrder(any(OrderMessage.class)))
                 .thenReturn(Mono.empty());
         when(ticketItemRepository.findByOrderId(testOrder.getOrderId()))
                 .thenReturn(Flux.fromIterable(ticketsWithIds));
@@ -154,7 +154,7 @@ class CreateTicketOrderUseCaseTest {
     @Test
     @DisplayName("Should fail when inventory not found")
     void shouldFailWhenInventoryNotFound() {
-        // Given - only mock what's needed for this test
+        // Given
         when(inventoryRepository.findByEventIdAndTicketType(eventId, "VIP"))
                 .thenReturn(Mono.empty());
 
@@ -172,7 +172,7 @@ class CreateTicketOrderUseCaseTest {
     @Test
     @DisplayName("Should fail when insufficient inventory")
     void shouldFailWhenInsufficientInventory() {
-        // Given - only mock what's needed for this test
+        // Given
         TicketInventory lowInventory = TicketInventory.create(
                 eventId,
                 "VIP",

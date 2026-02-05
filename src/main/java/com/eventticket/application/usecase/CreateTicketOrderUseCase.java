@@ -15,7 +15,7 @@ import com.eventticket.domain.valueobject.EventId;
 import com.eventticket.domain.valueobject.Money;
 import com.eventticket.infrastructure.config.ReservationProperties;
 import com.eventticket.infrastructure.messaging.OrderMessage;
-import com.eventticket.infrastructure.messaging.SqsOrderPublisher;
+import com.eventticket.infrastructure.messaging.OrderMessagePublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,8 @@ import java.util.stream.IntStream;
  * Use case for creating a ticket order.
  * Implements the Command pattern and orchestrates the order creation flow.
  * Functional Requirement #3: Asynchronous order processing.
- * Creates order, reserves tickets, and enqueues to SQS for async processing.
+ * Creates order, reserves tickets, and publishes to SNS Topic for async processing.
+ * SNS fans out the message to subscribed SQS queues (SNS + SQS pattern).
  * Using Java 25 - constructor injection without Lombok.
  */
 @Service
@@ -40,7 +41,7 @@ public class CreateTicketOrderUseCase {
     private final TicketInventoryRepository inventoryRepository;
     private final TicketItemRepository ticketItemRepository;
     private final TicketReservationRepository reservationRepository;
-    private final SqsOrderPublisher sqsOrderPublisher;
+    private final OrderMessagePublisher orderMessagePublisher;
     private final ReservationProperties reservationProperties;
 
     public CreateTicketOrderUseCase(
@@ -48,14 +49,14 @@ public class CreateTicketOrderUseCase {
             TicketInventoryRepository inventoryRepository,
             TicketItemRepository ticketItemRepository,
             TicketReservationRepository reservationRepository,
-            SqsOrderPublisher sqsOrderPublisher,
+            OrderMessagePublisher orderMessagePublisher,
             ReservationProperties reservationProperties
     ) {
         this.orderRepository = orderRepository;
         this.inventoryRepository = inventoryRepository;
         this.ticketItemRepository = ticketItemRepository;
         this.reservationRepository = reservationRepository;
-        this.sqsOrderPublisher = sqsOrderPublisher;
+        this.orderMessagePublisher = orderMessagePublisher;
         this.reservationProperties = reservationProperties;
     }
 
@@ -86,7 +87,7 @@ public class CreateTicketOrderUseCase {
                                     .then(Mono.just(order));
                         }))
                 .flatMap(order -> {
-                    // Enqueue order to SQS for asynchronous processing
+                    // Publish order to SNS Topic for asynchronous processing (fan-out to SQS)
                     OrderMessage message = OrderMessage.of(
                             order.getOrderId(),
                             order.getEventId().value(),
@@ -94,7 +95,7 @@ public class CreateTicketOrderUseCase {
                             request.ticketType(),
                             request.quantity()
                     );
-                    return sqsOrderPublisher.publishOrder(message)
+                    return orderMessagePublisher.publishOrder(message)
                             .thenReturn(order);
                 })
                 .flatMap(order -> 

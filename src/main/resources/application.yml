@@ -35,6 +35,9 @@ aws:
   sqs:
     endpoint: ${AWS_SQS_ENDPOINT:http://localhost:4566}
 
+  sns:
+    endpoint: ${AWS_SNS_ENDPOINT:http://localhost:4566}
+
 # Server Configuration
 server:
   port: ${SERVER_PORT:8080}
@@ -85,6 +88,9 @@ application:
     check-interval-ms: 60000  # Check every minute for expired reservations
   inventory:
     max-retry-attempts: 3
+  sns:
+    order-topic-name: ticket-order-topic
   sqs:
     order-queue-url: ticket-order-queue
-    poll-interval-ms: 5000  # Poll queue every 5 seconds
+    max-messages: 10
+    wait-time-seconds: 20  # SQS long-polling (max 20s, near-instant delivery)
