@@ -236,7 +236,9 @@ class DynamoDBTicketItemRepositoryTest {
                 tickets,
                 com.eventticket.domain.valueobject.EventId.generate(),
                 "VIP",
-                seatNumbers
+                seatNumbers,
+                com.eventticket.domain.model.TicketStatus.SOLD,
+                java.util.List.of(com.eventticket.domain.model.TicketStatus.PENDING_CONFIRMATION)
         );
 
         // Then

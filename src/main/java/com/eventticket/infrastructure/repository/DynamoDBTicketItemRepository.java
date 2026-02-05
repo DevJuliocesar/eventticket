@@ -227,7 +227,9 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
             List<TicketItem> tickets,
             com.eventticket.domain.valueobject.EventId eventId,
             String ticketType,
-            List<String> seatNumbers
+            List<String> seatNumbers,
+            com.eventticket.domain.model.TicketStatus targetStatus,
+            List<com.eventticket.domain.model.TicketStatus> allowedSourceStatuses
     ) {
         if (tickets.size() != seatNumbers.size()) {
             return Mono.error(new IllegalArgumentException(
@@ -291,17 +293,27 @@ public class DynamoDBTicketItemRepository implements TicketItemRepository {
             // Build update expression to set seatNumber and status
             String updateExpression = "SET seatNumber = :seatNumber, #status = :status, statusChangedAt = :statusChangedAt, statusChangedBy = :statusChangedBy";
             
-            // Condition: ticket must exist, be in PENDING_CONFIRMATION status, and not already have a seat assigned
-            // This ensures we can only transition from PENDING_CONFIRMATION to SOLD
-            String conditionExpression = "attribute_exists(ticketId) AND #status = :pendingStatus AND attribute_not_exists(seatNumber)";
+            // Build dynamic condition: ticket must exist, be in one of the allowed statuses, and not already have a seat
+            // Uses OR conditions for multiple allowed source statuses (e.g., RESERVED OR PENDING_CONFIRMATION)
+            StringBuilder statusCondition = new StringBuilder("(");
+            Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+            for (int j = 0; j < allowedSourceStatuses.size(); j++) {
+                if (j > 0) statusCondition.append(" OR ");
+                String placeholder = ":allowedStatus" + j;
+                statusCondition.append("#status = ").append(placeholder);
+                expressionAttributeValues.put(placeholder,
+                        AttributeValue.builder().s(allowedSourceStatuses.get(j).name()).build());
+            }
+            statusCondition.append(")");
+            
+            String conditionExpression = "attribute_exists(ticketId) AND %s AND attribute_not_exists(seatNumber)"
+                    .formatted(statusCondition.toString());
             
             Map<String, String> expressionAttributeNames = new HashMap<>();
             expressionAttributeNames.put("#status", "status");
             
-            Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
             expressionAttributeValues.put(":seatNumber", AttributeValue.builder().s(seatNumber).build());
-            expressionAttributeValues.put(":status", AttributeValue.builder().s("SOLD").build());
-            expressionAttributeValues.put(":pendingStatus", AttributeValue.builder().s("PENDING_CONFIRMATION").build());
+            expressionAttributeValues.put(":status", AttributeValue.builder().s(targetStatus.name()).build());
             expressionAttributeValues.put(":statusChangedAt", AttributeValue.builder().n(String.valueOf(Instant.now().getEpochSecond())).build());
             expressionAttributeValues.put(":statusChangedBy", AttributeValue.builder().s(ticket.getStatusChangedBy()).build());
 

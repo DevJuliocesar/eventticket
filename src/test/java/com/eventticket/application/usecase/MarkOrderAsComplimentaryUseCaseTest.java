@@ -6,6 +6,7 @@ import com.eventticket.domain.model.OrderStatus;
 import com.eventticket.domain.model.TicketInventory;
 import com.eventticket.domain.model.TicketItem;
 import com.eventticket.domain.model.TicketOrder;
+import com.eventticket.domain.model.TicketStatus;
 import com.eventticket.domain.repository.TicketInventoryRepository;
 import com.eventticket.domain.repository.TicketItemRepository;
 import com.eventticket.domain.repository.TicketOrderRepository;
@@ -86,7 +87,7 @@ class MarkOrderAsComplimentaryUseCaseTest {
                 .thenReturn(Flux.fromIterable(complimentaryTickets));
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty());
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class))).thenReturn(Mono.just(complimentaryOrder));
         when(orderRepository.findByEventId(eventId)).thenReturn(Flux.empty());
@@ -135,7 +136,7 @@ class MarkOrderAsComplimentaryUseCaseTest {
                 .thenReturn(Flux.fromIterable(complimentaryTickets));
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty());
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class))).thenReturn(Mono.just(complimentaryOrder));
         when(orderRepository.findByEventId(eventId)).thenReturn(Flux.empty());
@@ -242,7 +243,7 @@ class MarkOrderAsComplimentaryUseCaseTest {
                 .thenReturn(Flux.fromIterable(complimentaryTickets));
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty());
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.error(new IllegalStateException("Transaction failed")))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class))).thenReturn(Mono.just(complimentaryOrder));
@@ -277,7 +278,7 @@ class MarkOrderAsComplimentaryUseCaseTest {
                 .thenReturn(Flux.fromIterable(testTickets));
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty());
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.error(new IllegalStateException("Transaction failed")));
         when(orderRepository.findByEventId(eventId)).thenReturn(Flux.empty());
 

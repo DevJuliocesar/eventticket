@@ -114,7 +114,9 @@ public class MarkOrderAsSoldUseCase {
                                                             tickets,
                                                             order.getEventId(),
                                                             ticketType,
-                                                            seatNumbers
+                                                            seatNumbers,
+                                                            TicketStatus.SOLD,
+                                                            List.of(TicketStatus.PENDING_CONFIRMATION)
                                                     )
                                                     .then(Mono.defer(() -> {
                                                         // After successful transaction, update tickets and order

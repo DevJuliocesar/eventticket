@@ -105,7 +105,7 @@ class MarkOrderAsSoldUseCaseTest {
                 .thenReturn(Flux.fromIterable(soldTickets)); // First call: get tickets, second call: get sold tickets for response
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty()); // No existing seats
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class)))
                 .thenReturn(Mono.just(soldOrder));
@@ -218,7 +218,7 @@ class MarkOrderAsSoldUseCaseTest {
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty()) // First attempt: no existing seats
                 .thenReturn(Flux.empty()); // Retry attempt: still no existing seats
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.error(new IllegalStateException("Transaction failed"))) // First attempt fails
                 .thenReturn(Mono.empty()); // Retry succeeds
         when(orderRepository.save(any(TicketOrder.class)))
@@ -262,7 +262,7 @@ class MarkOrderAsSoldUseCaseTest {
                 .thenReturn(Flux.fromIterable(soldTickets)); // Final response
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty()); // No existing seats
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.error(new IllegalStateException("Transaction failed"))) // Attempt 1 fails
                 .thenReturn(Mono.error(new IllegalStateException("Transaction failed"))) // Attempt 2 fails
                 .thenReturn(Mono.error(new IllegalStateException("Transaction failed"))); // Attempt 3 fails (max retries)
@@ -313,7 +313,7 @@ class MarkOrderAsSoldUseCaseTest {
                 .thenReturn(Flux.fromIterable(soldTickets));
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty());
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class)))
                 .thenReturn(Mono.just(soldOrder));
@@ -356,7 +356,7 @@ class MarkOrderAsSoldUseCaseTest {
                 .thenReturn(Flux.fromIterable(soldTickets));
         when(ticketItemRepository.findByEventIdAndTicketTypeWithSeatNumber(eventId, "VIP"))
                 .thenReturn(Flux.empty());
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class)))
                 .thenReturn(Mono.just(soldOrder));
@@ -408,7 +408,7 @@ class MarkOrderAsSoldUseCaseTest {
                         "Other Event",
                         List.of(occupiedTicket)
                 ))); // Another order with A-1
-        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class)))
+        when(ticketItemRepository.assignSeatsAtomically(any(List.class), any(EventId.class), any(String.class), any(List.class), any(TicketStatus.class), any(List.class)))
                 .thenReturn(Mono.empty());
         when(orderRepository.save(any(TicketOrder.class)))
                 .thenReturn(Mono.just(soldOrder));

@@ -107,6 +107,11 @@ public class MarkOrderAsComplimentaryUseCase {
 
                     String ticketType = tickets.get(0).getTicketType();
 
+                    // Determine allowed source statuses based on current order status
+                    List<TicketStatus> allowedStatuses = List.of(
+                            TicketStatus.AVAILABLE, TicketStatus.RESERVED, TicketStatus.PENDING_CONFIRMATION
+                    );
+
                     return findAvailableSeatNumbers(order.getEventId(), ticketType, tickets.size())
                             .flatMap(seatNumbers -> verifySeatUniqueness(order.getEventId(), ticketType, seatNumbers)
                                     .flatMap(areUnique -> {
@@ -117,7 +122,8 @@ public class MarkOrderAsComplimentaryUseCase {
                                         }
 
                                         return ticketItemRepository.assignSeatsAtomically(
-                                                        tickets, order.getEventId(), ticketType, seatNumbers
+                                                        tickets, order.getEventId(), ticketType, seatNumbers,
+                                                        TicketStatus.COMPLIMENTARY, allowedStatuses
                                                 )
                                                 .then(Mono.defer(() -> {
                                                     List<TicketItem> updatedTickets = new ArrayList<>();

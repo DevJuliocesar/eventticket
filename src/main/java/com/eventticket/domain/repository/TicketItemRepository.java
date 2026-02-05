@@ -90,12 +90,16 @@ public interface TicketItemRepository {
      * @param eventId Event identifier
      * @param ticketType Ticket type
      * @param seatNumbers List of seat numbers to assign (must match tickets size)
+     * @param targetStatus Target status for the tickets (e.g., SOLD or COMPLIMENTARY)
+     * @param allowedSourceStatuses Allowed current statuses for the tickets
      * @return Mono that completes when all seats are assigned atomically
      */
     Mono<Void> assignSeatsAtomically(
             java.util.List<TicketItem> tickets,
             com.eventticket.domain.valueobject.EventId eventId,
             String ticketType,
-            java.util.List<String> seatNumbers
+            java.util.List<String> seatNumbers,
+            com.eventticket.domain.model.TicketStatus targetStatus,
+            java.util.List<com.eventticket.domain.model.TicketStatus> allowedSourceStatuses
     );
 }
