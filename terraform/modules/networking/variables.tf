@@ -1,32 +1,32 @@
 variable "environment" {
-  description = "Entorno de despliegue"
+  description = "Deployment environment"
   type        = string
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block para la VPC"
+  description = "CIDR block for VPC"
   type        = string
 }
 
 variable "azs" {
-  description = "Lista de Availability Zones"
+  description = "List of Availability Zones"
   type        = list(string)
 }
 
 variable "enable_nat_gateway" {
-  description = "Habilitar NAT Gateway"
+  description = "Enable NAT Gateway"
   type        = bool
   default     = true
 }
 
 variable "single_nat_gateway" {
-  description = "Usar un solo NAT Gateway para todas las AZs"
+  description = "Use a single NAT Gateway for all AZs"
   type        = bool
   default     = false
 }
 
 variable "tags" {
-  description = "Tags comunes para todos los recursos"
+  description = "Common tags for all resources"
   type        = map(string)
   default     = {}
 }

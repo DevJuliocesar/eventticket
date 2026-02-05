@@ -1,7 +1,7 @@
-# Módulo App Runner
-# AWS App Runner para despliegue simplificado de contenedores
+# App Runner Module
+# AWS App Runner for simplified container deployment
 
-# ECR Repository (si no existe)
+# ECR Repository (if it doesn't exist)
 data "aws_caller_identity" "current" {}
 
 resource "aws_ecr_repository" "app" {
@@ -24,7 +24,7 @@ resource "aws_ecr_repository" "app" {
   )
 }
 
-# ECR Lifecycle Policy (mantener últimas 10 imágenes)
+# ECR Lifecycle Policy (keep last 10 images)
 resource "aws_ecr_lifecycle_policy" "app" {
   repository = aws_ecr_repository.app.name
 
@@ -46,7 +46,7 @@ resource "aws_ecr_lifecycle_policy" "app" {
   })
 }
 
-# IAM Role para App Runner Access (para que App Runner acceda a ECR y otros servicios)
+# IAM Role for App Runner Access (for App Runner to access ECR and other services)
 resource "aws_iam_role" "apprunner_access" {
   name = "${var.environment}-${var.app_name}-apprunner-access-role"
 
@@ -66,7 +66,7 @@ resource "aws_iam_role" "apprunner_access" {
   tags = var.tags
 }
 
-# IAM Policy para acceso a ECR (para build)
+# IAM Policy for ECR access (for build)
 resource "aws_iam_role_policy" "apprunner_ecr_access" {
   name = "${var.environment}-${var.app_name}-apprunner-ecr-policy"
   role = aws_iam_role.apprunner_access.id
@@ -94,7 +94,7 @@ resource "aws_iam_role_policy" "apprunner_ecr_access" {
   })
 }
 
-# IAM Role para App Runner Instance (runtime)
+# IAM Role for App Runner Instance (runtime)
 resource "aws_iam_role" "apprunner_instance" {
   name = "${var.environment}-${var.app_name}-apprunner-instance-role"
 
@@ -114,7 +114,7 @@ resource "aws_iam_role" "apprunner_instance" {
   tags = var.tags
 }
 
-# IAM Policy para App Runner Instance (acceso a DynamoDB, SQS, ElastiCache, Logs)
+# IAM Policy for App Runner Instance (access to DynamoDB, SQS, ElastiCache, Logs)
 resource "aws_iam_role_policy" "apprunner_instance" {
   name = "${var.environment}-${var.app_name}-apprunner-instance-policy"
   role = aws_iam_role.apprunner_instance.id
@@ -161,7 +161,7 @@ resource "aws_iam_role_policy" "apprunner_instance" {
   })
 }
 
-# CloudWatch Log Group para App Runner
+# CloudWatch Log Group for App Runner
 resource "aws_cloudwatch_log_group" "apprunner" {
   name              = "/aws/apprunner/${var.environment}/${var.app_name}"
   retention_in_days = var.log_retention_days
@@ -174,7 +174,7 @@ resource "aws_cloudwatch_log_group" "apprunner" {
   )
 }
 
-# Auto Scaling Configuration (opcional, App Runner tiene auto-scaling por defecto)
+# Auto Scaling Configuration (optional, App Runner has auto-scaling by default)
 resource "aws_apprunner_auto_scaling_configuration_version" "app" {
   auto_scaling_configuration_name = "${var.environment}-${var.app_name}-autoscaling"
 
@@ -207,8 +207,10 @@ resource "aws_apprunner_service" "app" {
       }
       image_repository_type = "ECR"
     }
+    authentication_configuration {
+      access_role_arn = aws_iam_role.apprunner_access.arn
+    }
     auto_deployments_enabled = var.auto_deploy
-    access_role_arn         = aws_iam_role.apprunner_access.arn
   }
 
   instance_configuration {

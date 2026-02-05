@@ -1,29 +1,29 @@
 # Fargate vs Alternativas Más Simples - Análisis para EventTicket
 
-## 🔧 **OPCIONES CON TERRAFORM** (Infraestructura como Código)
+## **OPCIONES CON TERRAFORM** (Infraestructura como Código)
 
-### ✅ Tu situación actual:
-- ✅ Ya tienes **Terraform configurado** para Fargate
-- ✅ **Dockerfile** multi-stage optimizado
-- ✅ **Módulos Terraform** organizados (networking, security, data, application)
+### Tu situación actual:
+- Ya tienes **Terraform configurado** para Fargate
+- **Dockerfile** multi-stage optimizado
+- **Módulos Terraform** organizados (networking, security, data, application)
 
-### 🎯 **Opciones con soporte completo de Terraform:**
+### **Opciones con soporte completo de Terraform:**
 
-#### 1. **AWS Fargate/ECS** ⭐⭐⭐ (Ya lo tienes configurado)
+#### 1. **AWS Fargate/ECS**  (Ya lo tienes configurado)
 
-**Estado:** ✅ Ya tienes la infraestructura lista
+**Estado:**  Ya tienes la infraestructura lista
 
 **Ventajas:**
-- ✅ **Ya configurado** - Tu Terraform está listo
-- ✅ **Máximo control** - VPC, Security Groups, IAM, todo configurable
-- ✅ **Multi-entorno** - Dev, Staging, Prod separados
-- ✅ **Auto-scaling** - Configurado en tus módulos
-- ✅ **Alta disponibilidad** - Multi-AZ
+- **Ya configurado** - Tu Terraform está listo
+- **Máximo control** - VPC, Security Groups, IAM, todo configurable
+- **Multi-entorno** - Dev, Staging, Prod separados
+- **Auto-scaling** - Configurado en tus módulos
+- **Alta disponibilidad** - Multi-AZ
 
 **Desventajas:**
-- ❌ **Complejidad alta** - Muchos recursos que gestionar
-- ❌ **Costo alto** - ~$73/mes mínimo
-- ❌ **Tiempo de setup** - Ya invertido, pero mantenimiento continuo
+- **Complejidad alta** - Muchos recursos que gestionar
+- **Costo alto** - ~$73/mes mínimo
+- **Tiempo de setup** - Ya invertido, pero mantenimiento continuo
 
 **Tu configuración actual:**
 ```hcl
@@ -36,18 +36,18 @@ module "application" {
 
 ---
 
-#### 2. **AWS App Runner con Terraform** ⭐⭐ **RECOMENDADO**
+#### 2. **AWS App Runner con Terraform**  **RECOMENDADO**
 
 **Ventajas:**
-- ✅ **Soporte Terraform** - Provider AWS oficial
-- ✅ **Mucho más simple** - ~50 líneas vs 200+ de Fargate
-- ✅ **Costo bajo** - ~$10-20/mes
-- ✅ **Auto-scaling** - Automático
-- ✅ **HTTPS incluido** - Sin configuración adicional
+- **Soporte Terraform** - Provider AWS oficial
+- **Mucho más simple** - ~50 líneas vs 200+ de Fargate
+- **Costo bajo** - ~$10-20/mes
+- **Auto-scaling** - Automático
+- **HTTPS incluido** - Sin configuración adicional
 
 **Desventajas:**
-- ❌ **Menos control** - No puedes configurar VPC complejas
-- ❌ **Nuevo servicio** - Menos maduro que ECS
+- **Menos control** - No puedes configurar VPC complejas
+- **Nuevo servicio** - Menos maduro que ECS
 
 **Ejemplo de configuración Terraform:**
 
@@ -113,16 +113,16 @@ resource "aws_apprunner_auto_scaling_configuration_version" "eventticket" {
 
 ---
 
-#### 3. **AWS Elastic Beanstalk con Terraform** ⭐
+#### 3. **AWS Elastic Beanstalk con Terraform** 
 
 **Ventajas:**
-- ✅ **Soporte Terraform** - Provider AWS oficial
-- ✅ **Balance simplicidad/control** - Más control que App Runner
-- ✅ **Costo medio** - ~$28-40/mes
+- **Soporte Terraform** - Provider AWS oficial
+- **Balance simplicidad/control** - Más control que App Runner
+- **Costo medio** - ~$28-40/mes
 
 **Desventajas:**
-- ❌ **Más complejo que App Runner** - Requiere más configuración
-- ❌ **Menos flexible que Fargate** - Limitaciones de la plataforma
+- **Más complejo que App Runner** - Requiere más configuración
+- **Menos flexible que Fargate** - Limitaciones de la plataforma
 
 **Ejemplo de configuración Terraform:**
 
@@ -172,17 +172,17 @@ resource "aws_elastic_beanstalk_environment" "eventticket" {
 
 ---
 
-#### 4. **EC2 con Terraform** ⭐
+#### 4. **EC2 con Terraform** 
 
 **Ventajas:**
-- ✅ **Control total** - Puedes configurar todo
-- ✅ **Barato** - ~$7/mes (t3.micro)
-- ✅ **Flexible** - Cualquier configuración
+- **Control total** - Puedes configurar todo
+- **Barato** - ~$7/mes (t3.micro)
+- **Flexible** - Cualquier configuración
 
 **Desventajas:**
-- ❌ **Gestión manual** - Tú gestionas updates, patches
-- ❌ **Sin auto-scaling nativo** - Debes configurarlo
-- ❌ **Sin load balancer incluido** - Debes agregar ALB
+- **Gestión manual** - Tú gestionas updates, patches
+- **Sin auto-scaling nativo** - Debes configurarlo
+- **Sin load balancer incluido** - Debes agregar ALB
 
 **Ejemplo de configuración Terraform:**
 
@@ -217,18 +217,18 @@ resource "aws_instance" "eventticket" {
 
 ---
 
-## 📊 **Comparación: Opciones con Terraform**
+## **Comparación: Opciones con Terraform**
 
 | Opción | Complejidad Terraform | Líneas de Código | Costo/mes | Control | Auto-scaling |
 |--------|----------------------|------------------|-----------|---------|--------------|
-| **Fargate** (actual) | ⭐⭐⭐⭐⭐ | ~200+ | $73+ | ⭐⭐⭐⭐⭐ | ✅ |
-| **App Runner** | ⭐⭐ | ~50 | $10-20 | ⭐⭐⭐ | ✅ |
-| **Beanstalk** | ⭐⭐⭐ | ~100 | $28-40 | ⭐⭐⭐⭐ | ✅ |
-| **EC2** | ⭐⭐⭐⭐ | ~80 | $7-24 | ⭐⭐⭐⭐⭐ | ❌ (manual) |
+| **Fargate** (actual) |  | ~200+ | $73+ |  |  |
+| **App Runner** |  | ~50 | $10-20 |  |  |
+| **Beanstalk** |  | ~100 | $28-40 |  |  |
+| **EC2** |  | ~80 | $7-24 |  |  (manual) |
 
 ---
 
-## 🎯 **Recomendación: Si quieres usar Terraform**
+## **Recomendación: Si quieres usar Terraform**
 
 ### Opción 1: **Mantener Fargate** (si ya funciona)
 ```yaml
@@ -237,7 +237,7 @@ Costo: $73+/mes
 Complejidad: Alta (pero ya resuelta)
 ```
 
-### Opción 2: **Migrar a App Runner con Terraform** ⭐ **RECOMENDADO**
+### Opción 2: **Migrar a App Runner con Terraform**  **RECOMENDADO**
 ```yaml
 Razón: 
   - 75% menos código Terraform
@@ -343,16 +343,16 @@ aws apprunner list-services
 
 ---
 
-## 🐳 **RECOMENDACIÓN ESPECÍFICA: Ya tienes Docker configurado**
+## **RECOMENDACIÓN ESPECÍFICA: Ya tienes Docker configurado**
 
-### ✅ Tu situación actual:
-- ✅ **Dockerfile** multi-stage optimizado (Alpine, ~50MB)
-- ✅ **docker-compose.yml** configurado
-- ✅ **Health checks** configurados (`/actuator/health`)
-- ✅ **Puerto 8080** expuesto
-- ✅ **Variables de entorno** definidas
+### Tu situación actual:
+- **Dockerfile** multi-stage optimizado (Alpine, ~50MB)
+- **docker-compose.yml** configurado
+- **Health checks** configurados (`/actuator/health`)
+- **Puerto 8080** expuesto
+- **Variables de entorno** definidas
 
-### 🎯 **MEJOR OPCIÓN PARA TI: AWS App Runner** ⭐⭐⭐
+### **MEJOR OPCIÓN PARA TI: AWS App Runner** 
 
 **¿Por qué App Runner es perfecto para tu caso?**
 
@@ -364,7 +364,7 @@ aws apprunner list-services
 6. **Integración AWS nativa** - Fácil conexión a DynamoDB, SQS, ElastiCache
 7. **Costo: ~$10-20/mes** - Mucho más barato que Fargate
 
-### 📋 **Guía rápida: Deploy a App Runner (30 minutos)**
+### **Guía rápida: Deploy a App Runner (30 minutos)**
 
 #### Paso 1: Build y push a ECR (10 min)
 ```bash
@@ -442,11 +442,11 @@ railway up
 ```
 
 **Ventajas:**
-- ✅ Detecta tu `Dockerfile` automáticamente
-- ✅ Variables de entorno desde la UI
-- ✅ HTTPS automático
-- ✅ Tier gratuito para empezar
-- ✅ Auto-deploy desde GitHub
+- Detecta tu `Dockerfile` automáticamente
+- Variables de entorno desde la UI
+- HTTPS automático
+- Tier gratuito para empezar
+- Auto-deploy desde GitHub
 
 ---
 
@@ -463,11 +463,11 @@ Este sistema es una **aplicación Spring Boot reactiva** que:
 
 ---
 
-## 📊 Comparación: Fargate vs Alternativas
+## Comparación: Fargate vs Alternativas
 
 ### 1. **AWS Fargate** (Opción Compleja)
 
-#### ✅ Ventajas
+#### Ventajas
 - **Sin gestión de servidores**: No necesitas EC2, solo contenedores
 - **Auto-scaling nativo**: Escala automáticamente según CPU/memoria
 - **Alta disponibilidad**: Multi-AZ automático
@@ -475,14 +475,14 @@ Este sistema es una **aplicación Spring Boot reactiva** que:
 - **Pago por uso**: Solo pagas por recursos usados
 - **Seguridad**: Aislamiento por contenedor, IAM roles
 
-#### ❌ Desventajas
+#### Desventajas
 - **Complejidad**: Requiere ECS, ALB, VPC, Security Groups, IAM
 - **Costo**: Más caro que alternativas simples (~$30-100/mes mínimo)
 - **Curva de aprendizaje**: Terraform, ECS, networking AWS
 - **Overkill para MVP**: Demasiado para proyectos pequeños
 - **Tiempo de setup**: Días de configuración inicial
 
-#### 💰 Costos Estimados (Dev/Staging)
+#### Costos Estimados (Dev/Staging)
 ```
 ECS Fargate (1 task, 0.5 vCPU, 1GB RAM): ~$15/mes
 ALB (Application Load Balancer): ~$16/mes
@@ -492,7 +492,7 @@ Data Transfer: ~$10/mes
 Total: ~$73/mes (mínimo)
 ```
 
-#### 📋 Requisitos
+#### Requisitos
 - Terraform o CloudFormation
 - Conocimiento de ECS, VPC, ALB
 - CI/CD pipeline
@@ -500,9 +500,9 @@ Total: ~$73/mes (mínimo)
 
 ---
 
-### 2. **AWS Elastic Beanstalk** (Opción Intermedia) ⭐ **RECOMENDADO**
+### 2. **AWS Elastic Beanstalk** (Opción Intermedia)  **RECOMENDADO**
 
-#### ✅ Ventajas
+#### Ventajas
 - **Mucho más simple**: Solo subes el JAR, AWS hace el resto
 - **Auto-scaling**: Configurable con sliders
 - **Load Balancer incluido**: ALB automático
@@ -511,12 +511,12 @@ Total: ~$73/mes (mínimo)
 - **Logs centralizados**: CloudWatch automático
 - **Costo similar**: ~$20-40/mes (más barato que Fargate)
 
-#### ❌ Desventajas
+#### Desventajas
 - **Menos control**: No puedes configurar todo como en ECS
 - **Plataforma específica**: Optimizado para Java/Spring Boot
 - **Menos flexible**: Para casos muy complejos puede ser limitante
 
-#### 💰 Costos Estimados
+#### Costos Estimados
 ```
 EC2 t3.micro (1 instancia): ~$7/mes
 ELB (Elastic Load Balancer): ~$16/mes
@@ -525,7 +525,7 @@ Data Transfer: ~$5/mes
 Total: ~$28/mes
 ```
 
-#### 📋 Setup
+#### Setup
 ```bash
 # 1. Instalar EB CLI
 pip install awsebcli
@@ -544,9 +544,9 @@ eb deploy
 
 ---
 
-### 3. **AWS App Runner** (Opción Más Simple) ⭐⭐ **MUY RECOMENDADO**
+### 3. **AWS App Runner** (Opción Más Simple)  **MUY RECOMENDADO**
 
-#### ✅ Ventajas
+#### Ventajas
 - **Súper simple**: Solo apuntas a Docker Hub o ECR
 - **Auto-scaling**: Automático, sin configuración
 - **HTTPS incluido**: SSL automático
@@ -554,12 +554,12 @@ eb deploy
 - **Muy barato**: ~$7-15/mes para tráfico bajo
 - **CI/CD integrado**: Conecta con GitHub/GitLab
 
-#### ❌ Desventajas
+#### Desventajas
 - **Limitado a contenedores**: Debe ser Docker
 - **Menos control**: No puedes configurar VPC complejas
 - **Nuevo servicio**: Menos maduro que otras opciones
 
-#### 💰 Costos Estimados
+#### Costos Estimados
 ```
 App Runner (0.5 vCPU, 1GB RAM): ~$7/mes base
 + $0.007 por GB-hora de CPU
@@ -568,7 +568,7 @@ App Runner (0.5 vCPU, 1GB RAM): ~$7/mes base
 Total: ~$10-20/mes (tráfico bajo)
 ```
 
-#### 📋 Setup
+#### Setup
 ```bash
 # 1. Build y push a ECR
 docker build -t eventticket .
@@ -584,9 +584,9 @@ aws apprunner create-service --cli-input-json file://apprunner-config.json
 
 ---
 
-### 4. **Railway / Render / Fly.io** (Opción Más Simple) ⭐⭐⭐ **MÁS SIMPLE**
+### 4. **Railway / Render / Fly.io** (Opción Más Simple)  **MÁS SIMPLE**
 
-#### ✅ Ventajas
+#### Ventajas
 - **Extremadamente simple**: Conecta GitHub, auto-deploy
 - **Gratis para empezar**: Tier gratuito disponible
 - **Sin configuración**: Zero config
@@ -594,19 +594,19 @@ aws apprunner create-service --cli-input-json file://apprunner-config.json
 - **Base de datos incluida**: PostgreSQL/Redis disponibles
 - **Perfecto para MVP**: Ideal para proyectos pequeños
 
-#### ❌ Desventajas
+#### Desventajas
 - **Vendor lock-in**: Dependes del proveedor
 - **Menos control**: No puedes configurar todo
 - **Escalabilidad limitada**: Para tráfico muy alto puede ser caro
 
-#### 💰 Costos
+#### Costos
 ```
 Railway: Gratis hasta $5/mes, luego $0.000463/GB-hora
 Render: Gratis tier, luego $7/mes por servicio
 Fly.io: Gratis tier, luego ~$2-5/mes
 ```
 
-#### 📋 Setup Railway (ejemplo)
+#### Setup Railway (ejemplo)
 ```bash
 # 1. Instalar CLI
 npm i -g @railway/cli
@@ -627,18 +627,18 @@ railway up
 
 ### 5. **EC2 Simple** (Opción Tradicional)
 
-#### ✅ Ventajas
+#### Ventajas
 - **Control total**: Puedes hacer lo que quieras
 - **Barato**: t3.micro gratis 1 año, luego ~$7/mes
 - **Familiar**: Todos conocen EC2
 
-#### ❌ Desventajas
+#### Desventajas
 - **Gestión manual**: Tú gestionas todo
 - **Sin auto-scaling**: Debes configurarlo manualmente
 - **Sin load balancer**: Debes configurar ALB aparte
 - **Mantenimiento**: Updates, security patches, etc.
 
-#### 💰 Costos
+#### Costos
 ```
 EC2 t3.micro: ~$7/mes
 + ALB: ~$16/mes
@@ -649,11 +649,11 @@ Total: ~$24/mes
 
 ---
 
-## 🎯 Recomendación por Escenario
+## Recomendación por Escenario
 
 ### Para **MVP / Desarrollo / Proyectos Pequeños**
 ```
-1. Railway / Render / Fly.io  ⭐⭐⭐
+1. Railway / Render / Fly.io  
    - Setup: 10 minutos
    - Costo: $0-10/mes
    - Complejidad: Mínima
@@ -661,7 +661,7 @@ Total: ~$24/mes
 
 ### Para **Producción Pequeña/Media** (1-10k usuarios)
 ```
-2. AWS App Runner  ⭐⭐
+2. AWS App Runner  
    - Setup: 30 minutos
    - Costo: $10-30/mes
    - Complejidad: Baja
@@ -669,7 +669,7 @@ Total: ~$24/mes
 
 ### Para **Producción Media/Grande** (10k-100k usuarios)
 ```
-3. AWS Elastic Beanstalk  ⭐
+3. AWS Elastic Beanstalk  
    - Setup: 1-2 horas
    - Costo: $30-100/mes
    - Complejidad: Media
@@ -685,16 +685,16 @@ Total: ~$24/mes
 
 ---
 
-## 📈 Matriz de Decisión
+## Matriz de Decisión
 
 | Criterio | Fargate | Beanstalk | App Runner | Railway/Render |
 |----------|---------|-----------|------------|----------------|
-| **Simplicidad** | ⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Costo (bajo tráfico)** | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Escalabilidad** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Control** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐ |
-| **Tiempo Setup** | ⭐ | ⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Integración AWS** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ |
+| **Simplicidad** |  |  |  |  |
+| **Costo (bajo tráfico)** |  |  |  |  |
+| **Escalabilidad** |  |  |  |  |
+| **Control** |  |  |  |  |
+| **Tiempo Setup** |  |  |  |  |
+| **Integración AWS** |  |  |  |  |
 
 ---
 
@@ -722,7 +722,7 @@ Total: ~$24/mes
 
 ### Cuándo SÍ usar Fargate:
 
-✅ **Usa Fargate si:**
+ **Usa Fargate si:**
 - Tienes >100k usuarios concurrentes
 - Necesitas múltiples regiones
 - Requieres configuración de red muy específica
@@ -732,11 +732,11 @@ Total: ~$24/mes
 
 ---
 
-## 🚀 Recomendación Final para EventTicket
+## Recomendación Final para EventTicket
 
-### 🐳 **Para tu caso específico (ya tienes Docker):**
+### **Para tu caso específico (ya tienes Docker):**
 
-#### Opción 1: AWS App Runner ⭐⭐⭐ **MEJOR OPCIÓN**
+#### Opción 1: AWS App Runner  **MEJOR OPCIÓN**
 ```yaml
 Razón: 
   - Acepta tu Dockerfile sin cambios
@@ -749,7 +749,7 @@ Razón:
 Ideal para: Producción pequeña/media (1-50k usuarios)
 ```
 
-#### Opción 2: Railway ⭐⭐ **MÁS RÁPIDO PARA EMPEZAR**
+#### Opción 2: Railway  **MÁS RÁPIDO PARA EMPEZAR**
 ```yaml
 Razón:
   - Detecta Dockerfile automáticamente
@@ -783,14 +783,14 @@ Razón:
 Ideal para: Enterprise (100k+ usuarios, múltiples regiones)
 ```
 
-### 📊 **Comparación rápida para tu caso:**
+### **Comparación rápida para tu caso:**
 
 | Opción | Setup | Costo/mes | Complejidad | Tu Dockerfile |
 |--------|-------|-----------|--------------|---------------|
-| **Railway** | 10 min | $0-15 | ⭐⭐⭐⭐⭐ | ✅ Funciona |
-| **App Runner** | 30 min | $10-20 | ⭐⭐⭐⭐ | ✅ Funciona |
-| **Beanstalk** | 1-2h | $28-40 | ⭐⭐⭐ | ✅ Funciona |
-| **Fargate** | Días | $73+ | ⭐ | ✅ Funciona |
+| **Railway** | 10 min | $0-15 |  |  Funciona |
+| **App Runner** | 30 min | $10-20 |  |  Funciona |
+| **Beanstalk** | 1-2h | $28-40 |  |  Funciona |
+| **Fargate** | Días | $73+ |  |  Funciona |
 
 ---
 
@@ -828,9 +828,9 @@ Ideal para: Enterprise (100k+ usuarios, múltiples regiones)
 
 ## 🎓 Conclusión
 
-### 🐳 **Para tu caso específico (Docker ya configurado):**
+### **Para tu caso específico (Docker ya configurado):**
 
-**✅ RECOMENDACIÓN FINAL:**
+** RECOMENDACIÓN FINAL:**
 
 1. **Para empezar rápido (hoy):** 
    - **Railway** - 10 minutos, gratis tier, auto-deploy
@@ -844,18 +844,18 @@ Ideal para: Enterprise (100k+ usuarios, múltiples regiones)
 3. **Solo si realmente necesitas:**
    - **Fargate** - Para casos enterprise con >100k usuarios
 
-### 💰 **Ahorro vs Fargate:**
-- ⏱️ **Tiempo:** Días → 30 minutos (App Runner) o 10 minutos (Railway)
+### **Ahorro vs Fargate:**
+- **Tiempo:** Días → 30 minutos (App Runner) o 10 minutos (Railway)
 - 💵 **Costo:** $73/mes → $10-20/mes (App Runner) o $0-15/mes (Railway)
 - 🧠 **Complejidad:** Alta (Terraform, VPC, ECS) → Baja (solo Docker)
 
-### 🎯 **Ventaja clave:**
+### **Ventaja clave:**
 Como ya tienes Docker configurado, **no necesitas cambiar nada**. Solo:
 - Push a ECR (App Runner) o GitHub (Railway)
 - Configurar variables de entorno
 - ¡Deploy!
 
-**"Start simple, scale when needed"** 🚀
+**"Start simple, scale when needed"** 
 
 ---
 
@@ -867,29 +867,29 @@ Como ya tienes Docker configurado, **no necesitas cambiar nada**. Solo:
 
 ---
 
-## 🔧 **RESUMEN EJECUTIVO: Opciones con Terraform**
+## **RESUMEN EJECUTIVO: Opciones con Terraform**
 
 ### Si quieres usar Terraform (Infraestructura como Código):
 
 | Opción | Estado Actual | Complejidad | Costo/mes | Líneas Terraform | Recomendación |
 |--------|---------------|-------------|-----------|------------------|---------------|
-| **Fargate** | ✅ Ya configurado | ⭐⭐⭐⭐⭐ | $73+ | ~200+ | Mantener si funciona |
-| **App Runner** | ⭐ Mejor opción | ⭐⭐ | $10-20 | ~50 | **Migrar** |
-| **Beanstalk** | Alternativa | ⭐⭐⭐ | $28-40 | ~100 | Considerar |
-| **EC2** | No recomendado | ⭐⭐⭐⭐ | $7-24 | ~80 | Evitar |
+| **Fargate** |  Ya configurado |  | $73+ | ~200+ | Mantener si funciona |
+| **App Runner** |  Mejor opción |  | $10-20 | ~50 | **Migrar** |
+| **Beanstalk** | Alternativa |  | $28-40 | ~100 | Considerar |
+| **EC2** | No recomendado |  | $7-24 | ~80 | Evitar |
 
-### 🎯 **Decisión rápida para tu caso:**
+### **Decisión rápida para tu caso:**
 
 **Ya tienes Fargate con Terraform:**
-- ✅ **Mantener** si el costo no es problema y necesitas control total
-- ✅ **Migrar a App Runner** si quieres:
+- **Mantener** si el costo no es problema y necesitas control total
+- **Migrar a App Runner** si quieres:
   - Simplificar (75% menos código)
   - Ahorrar ($50-60/mes)
   - Misma funcionalidad (auto-scaling, HTTPS)
 
 **Si estás empezando:**
-- ✅ **App Runner con Terraform** - Simple, barato, suficiente
-- ✅ **Fargate con Terraform** - Solo si necesitas control enterprise
+- **App Runner con Terraform** - Simple, barato, suficiente
+- **Fargate con Terraform** - Solo si necesitas control enterprise
 
 ### 💡 **Estrategia recomendada:**
 
@@ -907,7 +907,7 @@ Producción (control total):
   Tiempo setup: Ya invertido
 ```
 
-### 📋 **Comparación de código Terraform:**
+### **Comparación de código Terraform:**
 
 **Fargate (tu setup actual):**
 ```hcl
@@ -930,13 +930,13 @@ resource "aws_apprunner_service" "eventticket" {
 
 **Reducción: 75% menos código, 70% más barato, misma funcionalidad** 🎉
 
-### ✅ **Conclusión para Terraform:**
+### **Conclusión para Terraform:**
 
 **"Si quieres usar Terraform, App Runner es la mejor opción:**
-- ✅ **Más simple** - 75% menos código
-- ✅ **Más barato** - 70% de ahorro
-- ✅ **Misma funcionalidad** - Auto-scaling, HTTPS, integración AWS
-- ✅ **Más fácil de mantener** - Menos recursos que gestionar
+- **Más simple** - 75% menos código
+- **Más barato** - 70% de ahorro
+- **Misma funcionalidad** - Auto-scaling, HTTPS, integración AWS
+- **Más fácil de mantener** - Menos recursos que gestionar
 
 **Solo usa Fargate si realmente necesitas:**
 - Control total de VPC y networking

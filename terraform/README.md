@@ -1,106 +1,137 @@
-# EventTicket - Infraestructura Terraform
+# EventTicket - Terraform Infrastructure
 
-Infraestructura AWS para el sistema EventTicket usando Terraform.
+AWS infrastructure for EventTicket system using Terraform with AWS App Runner.
 
-## 📋 Estructura
+## Structure
 
 ```
 terraform/
-├── main.tf                    # Configuración principal
+├── main.tf                    # Main configuration
 ├── variables.tf               # Variables
 ├── modules/
 │   ├── networking/           # VPC, subnets, NAT
-│   ├── security/             # Security Groups, IAM
+│   ├── security/             # Security Groups (Redis)
 │   ├── data/                 # DynamoDB, SQS, Redis
-│   └── application/          # ECS, ALB, Auto Scaling
+│   └── apprunner/            # App Runner, ECR, Auto Scaling
 └── environments/
     ├── dev/terraform.tfvars
     ├── staging/terraform.tfvars
     └── prod/terraform.tfvars
 ```
 
-## 🏗️ Arquitectura
+## Architecture
 
 ```
-Internet → ALB (público) → ECS Fargate (privado) → DynamoDB/SQS/Redis
+Internet → App Runner (automatic HTTPS) → DynamoDB/SQS/Redis
 ```
 
-**Componentes:**
-- **Networking:** VPC con subnets públicas/privadas, NAT Gateway
-- **Aplicación:** ECS Fargate con ALB y Auto Scaling
-- **Datos:** DynamoDB (3 tablas), SQS (2 colas), ElastiCache Redis
-- **Seguridad:** Security Groups, IAM roles, encryption
+**Components:**
+- **Networking:** VPC with public/private subnets, NAT Gateway
+- **Application:** AWS App Runner with auto-scaling and HTTPS included
+- **Data:** DynamoDB (3 tables), SQS (2 queues), ElastiCache Redis
+- **Security:** Security Groups (Redis), IAM roles (App Runner)
 
-## 🚀 Uso Rápido
+## Quick Start
 
 ```bash
-# 1. Configurar variables
+# 1. Configure variables
 cp terraform.tfvars.example terraform.tfvars
-# Editar app_image con tu imagen Docker
+# Edit variables according to your environment
 
-# 2. Inicializar
+# 2. Initialize
 terraform init
 
-# 3. Planificar
+# 3. Plan
 terraform plan -var-file=environments/dev/terraform.tfvars
 
-# 4. Aplicar
+# 4. Apply
 terraform apply -var-file=environments/dev/terraform.tfvars
+
+# 5. Get service URL
+terraform output apprunner_service_url
+
+# 6. Get ECR repository URL for Docker image push
+terraform output ecr_repository_url
 ```
 
-## 📊 Recursos Creados
+## Created Resources
 
-### DynamoDB (3 tablas)
+### DynamoDB (3 tables)
 - `Events` - Event Sourcing
-- `TicketOrders` - Órdenes
-- `TicketInventory` - Inventario
+- `TicketOrders` - Orders
+- `TicketInventory` - Inventory
 
-### SQS (2 colas)
-- `ticket-order-queue` - Procesamiento de órdenes
+### SQS (2 queues)
+- `ticket-order-queue` - Order processing
 - `ticket-dlq` - Dead Letter Queue
 
 ### ElastiCache
-- Redis cluster (single node en dev, multi-AZ en prod)
+- Redis cluster (single node in dev, multi-AZ in prod)
 
-### ECS
-- Cluster Fargate
-- Service con Auto Scaling
-- Application Load Balancer
+### App Runner
+- App Runner service with automatic auto-scaling
+- ECR Repository for Docker images
+- HTTPS included (no additional configuration)
+- Auto-deploy when image is updated
 
-## 🔒 Seguridad
+## Security
 
-- Security Groups con reglas mínimas
-- IAM roles separados (execution vs. runtime)
-- Encryption at rest habilitada
-- ECS tasks en subnets privadas
+- Security Groups with minimal rules (Redis only)
+- IAM roles for App Runner (access and instance)
+- Encryption at rest enabled
+- Automatic HTTPS in App Runner
 
-## 📈 Escalabilidad
+## Scalability
 
-- Auto Scaling basado en CPU/memoria
-- DynamoDB PAY_PER_REQUEST (escalado automático)
-- Multi-AZ para alta disponibilidad
+- Auto Scaling based on CPU/memory
+- DynamoDB PAY_PER_REQUEST (automatic scaling)
+- Multi-AZ for high availability
 
-## 🏢 Entornos
+## Environments
 
-Cada entorno tiene su propia VPC y configuración:
-- **Dev:** 1 instancia, single NAT Gateway
-- **Staging:** 2 instancias, multi-AZ
-- **Prod:** 3+ instancias, multi-AZ
+Each environment has its own VPC and configuration:
+- **Dev:** 1 minimum instance, single NAT Gateway
+- **Staging:** 1-5 instances, multi-AZ
+- **Prod:** 1-20 instances, multi-AZ
 
-## 💰 Costos Estimados
+## Estimated Costs
 
-- **Dev:** ~$60-80/mes
-- **Staging:** ~$120-150/mes
-- **Prod:** ~$300-500/mes (varía según tráfico)
+- **Dev:** ~$30-40/month (App Runner + NAT Gateway + Redis)
+- **Staging:** ~$50-70/month
+- **Prod:** ~$100-200/month (varies by traffic)
 
-## 📚 Documentación
+**Savings vs Fargate:** ~70% cheaper
 
-- `QUICK_START.md` - Guía de despliegue rápido
-- `DECISIONES_DISENO.md` - Decisiones técnicas (simplificado)
+## Documentation
 
-## ✅ Checklist
+- `APP_RUNNER_MIGRATION.md` - Migration guide and usage
+- `QUICK_START.md` - Quick deployment guide (if exists)
 
-- [ ] Configurar `app_image` en terraform.tfvars
-- [ ] Verificar permisos IAM
-- [ ] Revisar variables por entorno
-- [ ] Ejecutar `terraform plan` antes de `apply`
+## Build and Push Docker Image
+
+```bash
+# 1. Get ECR URL
+ECR_URL=$(terraform output -raw ecr_repository_url)
+
+# 2. Login to ECR
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin $(echo $ECR_URL | cut -d'/' -f1)
+
+# 3. Build
+docker build -t eventticket .
+
+# 4. Tag and push
+docker tag eventticket:latest ${ECR_URL}:latest
+docker push ${ECR_URL}:latest
+```
+
+**Note:** If `apprunner_auto_deploy = true`, App Runner will automatically detect the new push and deploy.
+
+## Checklist
+
+- [ ] Configure variables in `environments/dev/terraform.tfvars`
+- [ ] Verify IAM permissions
+- [ ] Review variables per environment
+- [ ] Run `terraform plan` before `apply`
+- [ ] Build and push Docker image to ECR
+- [ ] Verify service is running

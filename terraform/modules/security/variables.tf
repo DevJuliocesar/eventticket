@@ -1,40 +1,20 @@
 variable "environment" {
-  description = "Entorno de despliegue"
+  description = "Deployment environment"
   type        = string
 }
 
 variable "vpc_id" {
-  description = "ID de la VPC"
+  description = "VPC ID"
   type        = string
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block de la VPC"
-  type        = string
-}
-
-variable "private_subnet_ids" {
-  description = "IDs de las subnets privadas"
-  type        = list(string)
-}
-
-variable "public_subnet_ids" {
-  description = "IDs de las subnets públicas"
-  type        = list(string)
-}
-
-variable "aws_account_id" {
-  description = "ID de la cuenta AWS"
-  type        = string
-}
-
-variable "aws_region" {
-  description = "Región AWS"
+  description = "VPC CIDR block"
   type        = string
 }
 
 variable "tags" {
-  description = "Tags comunes para todos los recursos"
+  description = "Common tags for all resources"
   type        = map(string)
   default     = {}
 }

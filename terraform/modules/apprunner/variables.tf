@@ -1,15 +1,15 @@
 variable "environment" {
-  description = "Entorno de despliegue"
+  description = "Deployment environment"
   type        = string
 }
 
 variable "app_name" {
-  description = "Nombre de la aplicación"
+  description = "Application name"
   type        = string
 }
 
 variable "app_port" {
-  description = "Puerto de la aplicación"
+  description = "Application port"
   type        = number
   default     = 8080
 }
@@ -21,100 +21,100 @@ variable "cpu" {
 }
 
 variable "memory" {
-  description = "Memoria para App Runner (0.5 GB, 1 GB, 2 GB, 3 GB, 4 GB, 6 GB, 8 GB, 12 GB)"
+  description = "Memory for App Runner (0.5 GB, 1 GB, 2 GB, 3 GB, 4 GB, 6 GB, 8 GB, 12 GB)"
   type        = string
   default     = "1 GB"
 }
 
 variable "aws_region" {
-  description = "Región AWS"
+  description = "AWS region"
   type        = string
 }
 
 variable "redis_endpoint" {
-  description = "Endpoint de Redis (ElastiCache)"
+  description = "Redis endpoint (ElastiCache)"
   type        = string
   sensitive   = true
 }
 
 variable "dynamodb_tables" {
-  description = "Mapa de nombres de tablas DynamoDB"
+  description = "Map of DynamoDB table names"
   type        = map(string)
 }
 
 variable "sqs_queues" {
-  description = "Mapa de URLs de colas SQS"
+  description = "Map of SQS queue URLs"
   type        = map(string)
 }
 
 variable "log_retention_days" {
-  description = "Días de retención de logs en CloudWatch"
+  description = "CloudWatch log retention days"
   type        = number
   default     = 7
 }
 
 variable "health_check_path" {
-  description = "Ruta para health check"
+  description = "Health check path"
   type        = string
   default     = "/actuator/health"
 }
 
 variable "health_check_interval" {
-  description = "Intervalo de health check en segundos"
+  description = "Health check interval in seconds"
   type        = number
   default     = 10
 }
 
 variable "health_check_timeout" {
-  description = "Timeout de health check en segundos"
+  description = "Health check timeout in seconds"
   type        = number
   default     = 5
 }
 
 variable "health_check_healthy_threshold" {
-  description = "Umbral de health checks exitosos"
+  description = "Healthy threshold for health checks"
   type        = number
   default     = 1
 }
 
 variable "health_check_unhealthy_threshold" {
-  description = "Umbral de health checks fallidos"
+  description = "Unhealthy threshold for health checks"
   type        = number
   default     = 5
 }
 
 variable "auto_deploy" {
-  description = "Habilitar auto-deploy cuando se actualiza la imagen"
+  description = "Enable auto-deploy when image is updated"
   type        = bool
   default     = true
 }
 
 variable "max_concurrency" {
-  description = "Máxima concurrencia por instancia"
+  description = "Maximum concurrency per instance"
   type        = number
   default     = 100
 }
 
 variable "max_size" {
-  description = "Número máximo de instancias"
+  description = "Maximum number of instances"
   type        = number
   default     = 10
 }
 
 variable "min_size" {
-  description = "Número mínimo de instancias"
+  description = "Minimum number of instances"
   type        = number
   default     = 1
 }
 
 variable "extra_environment_variables" {
-  description = "Variables de entorno adicionales"
+  description = "Extra environment variables"
   type        = map(string)
   default     = {}
 }
 
 variable "tags" {
-  description = "Tags comunes para todos los recursos"
+  description = "Common tags for all resources"
   type        = map(string)
   default     = {}
 }

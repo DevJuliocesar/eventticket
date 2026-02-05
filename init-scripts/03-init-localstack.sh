@@ -32,7 +32,7 @@ wait_for_localstack() {
 wait_for_localstack
 
 echo ""
-echo "=== 📊 Creating DynamoDB Tables ==="
+echo "===  Creating DynamoDB Tables ==="
 echo ""
 
 # ==========================================
@@ -442,7 +442,7 @@ aws --endpoint-url http://localhost:4566 sqs create-queue \
 echo "✓ FIFO queue 'ticket-order-fifo.fifo' created"
 
 echo ""
-echo "=== 📋 Listing Created Resources ==="
+echo "===  Listing Created Resources ==="
 echo ""
 
 # List DynamoDB tables
@@ -455,9 +455,9 @@ echo "SQS Queues:"
 aws --endpoint-url http://localhost:4566 sqs list-queues --output table
 
 echo ""
-echo "=== ✅ LocalStack Initialization Completed Successfully ==="
+echo "===  LocalStack Initialization Completed Successfully ==="
 echo ""
-echo "📊 Summary:"
+echo " Summary:"
 echo "  - DynamoDB: 8 tables created (Events, TicketOrders, TicketInventory, TicketReservations, TicketStateTransitionAudit, TicketItems, SeatReservations, CustomerInfo)"
 echo "  - SQS: 5 queues created (ticket-order, payment, notification, dlq, fifo)"
 echo ""
@@ -466,7 +466,7 @@ echo "  - LocalStack Gateway: http://localhost:4566"
 echo "  - Health Check: http://localhost:4566/_localstack/health"
 echo "  - Dashboard: https://app.localstack.cloud (requires account)"
 echo ""
-echo "🛠️  Useful Commands:"
+echo "  Useful Commands:"
 echo "  - aws --endpoint-url http://localhost:4566 dynamodb scan --table-name Events"
 echo "  - aws --endpoint-url http://localhost:4566 dynamodb scan --table-name TicketOrders"
 echo "  - aws --endpoint-url http://localhost:4566 dynamodb scan --table-name TicketInventory"

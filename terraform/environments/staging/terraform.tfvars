@@ -1,26 +1,26 @@
 # ============================================================================
-# Configuración para entorno STAGING
+# Configuration for STAGING environment
 # ============================================================================
 
 environment = "staging"
 aws_region  = "us-east-1"
 
-# Aplicación
-app_name  = "eventticket"
-app_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eventticket:staging"
-app_port  = 8080
+# Application
+app_name = "eventticket"
+app_port = 8080
 
 # Networking
 vpc_cidr           = "10.1.0.0/16"
 enable_nat_gateway = true
-single_nat_gateway = false  # Multi-AZ para staging
+single_nat_gateway = false  # Multi-AZ for staging
 
-# ECS Configuration
-ecs_cpu          = 512   # 0.5 vCPU
-ecs_memory       = 1024  # 1 GB
-ecs_desired_count = 2    # Dos instancias para alta disponibilidad
-ecs_min_capacity = 2
-ecs_max_capacity = 5
+# App Runner Configuration
+apprunner_cpu           = "0.5 vCPU"
+apprunner_memory        = "1 GB"
+apprunner_min_size      = 2
+apprunner_max_size      = 5
+apprunner_max_concurrency = 100
+apprunner_auto_deploy   = true
 
 # Logging
 log_retention_days = 7

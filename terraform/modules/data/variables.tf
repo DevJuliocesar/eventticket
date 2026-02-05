@@ -1,20 +1,20 @@
 variable "environment" {
-  description = "Entorno de despliegue"
+  description = "Deployment environment"
   type        = string
 }
 
 variable "private_subnet_ids" {
-  description = "IDs de las subnets privadas"
+  description = "Private subnet IDs"
   type        = list(string)
 }
 
 variable "security_group_ids" {
-  description = "IDs de los Security Groups para Redis"
+  description = "Security Group IDs for Redis"
   type        = list(string)
 }
 
 variable "tags" {
-  description = "Tags comunes"
+  description = "Common tags"
   type        = map(string)
   default     = {}
 }

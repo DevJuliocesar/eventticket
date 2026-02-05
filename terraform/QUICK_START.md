@@ -1,73 +1,74 @@
-# Guía de Inicio Rápido
+# Quick Start Guide
 
-## Prerrequisitos
+## Prerequisites
 
 ```bash
 terraform version  # >= 1.5.0
-aws sts get-caller-identity  # AWS CLI configurado
+aws sts get-caller-identity  # AWS CLI configured
 ```
 
-## Despliegue
+## Deployment
 
 ```bash
-# 1. Configurar variables
+# 1. Configure variables
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
-# Editar app_image con tu imagen Docker en ECR
+# Edit variables according to your environment
 
-# 2. Inicializar
+# 2. Initialize
 terraform init
 
-# 3. Planificar
+# 3. Plan
 terraform plan -var-file=environments/dev/terraform.tfvars
 
-# 4. Aplicar (toma ~15 minutos)
+# 4. Apply (takes ~10 minutes)
 terraform apply -var-file=environments/dev/terraform.tfvars
 ```
 
-## Verificar
+## Verify
 
 ```bash
-# Obtener URL del ALB
-terraform output alb_dns_name
+# Get App Runner service URL
+terraform output apprunner_service_url
 
-# Probar health check
-curl http://$(terraform output -raw alb_dns_name)/actuator/health
+# Test health check
+curl https://$(terraform output -raw apprunner_service_url | cut -d'/' -f3)/actuator/health
 ```
 
-## Preparar Imagen Docker
+## Prepare Docker Image
 
 ```bash
-# 1. Crear repositorio ECR
-aws ecr create-repository --repository-name eventticket
+# 1. Get ECR repository URL (created by Terraform)
+ECR_URL=$(terraform output -raw ecr_repository_url)
 
-# 2. Autenticarse
+# 2. Authenticate
 aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin \
-  123456789012.dkr.ecr.us-east-1.amazonaws.com
+  docker login --username AWS --password-stdin $(echo $ECR_URL | cut -d'/' -f1)
 
-# 3. Construir y push
-docker build -t eventticket:latest ..
-docker tag eventticket:latest \
-  123456789012.dkr.ecr.us-east-1.amazonaws.com/eventticket:latest
-docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/eventticket:latest
+# 3. Build and push
+cd ..
+docker build -t eventticket:latest .
+docker tag eventticket:latest ${ECR_URL}:latest
+docker push ${ECR_URL}:latest
 ```
+
+**Note:** If `apprunner_auto_deploy = true`, App Runner will automatically detect the new push and deploy.
 
 ## Troubleshooting
 
 **Error: Image not found**
-- Verificar que la imagen existe en ECR
-- Verificar URI en terraform.tfvars
+- Verify image exists in ECR
+- Verify ECR repository URL in terraform outputs
 
 **Error: Health check failed**
-- Verificar que `/actuator/health` está disponible
-- Verificar Security Groups
+- Verify `/actuator/health` is available
+- Check CloudWatch logs: `/aws/apprunner/{environment}/{app_name}`
 
 **Error: Cannot connect to Redis**
-- Verificar Security Groups
-- Verificar que Redis está en subnets privadas
+- Verify Security Groups allow VPC traffic
+- Verify Redis is in private subnets
 
-## Destruir
+## Destroy
 
 ```bash
 terraform destroy -var-file=environments/dev/terraform.tfvars

@@ -1,13 +1,13 @@
-# Módulo de Datos - Recursos esenciales
-# DynamoDB: Tablas principales (Events, TicketOrders, TicketInventory)
-# SQS: Cola principal y DLQ
-# ElastiCache: Redis para cache
+# Data Module - Essential Resources
+# DynamoDB: Main tables (Events, TicketOrders, TicketInventory)
+# SQS: Main queue and DLQ
+# ElastiCache: Redis for cache
 
 # ============================================================================
-# DynamoDB Tables (Solo las esenciales)
+# DynamoDB Tables (Only essentials)
 # ============================================================================
 
-# Tabla: Events (Event Sourcing)
+# Table: Events (Event Sourcing)
 resource "aws_dynamodb_table" "events" {
   name         = "${var.environment}-Events"
   billing_mode = "PAY_PER_REQUEST"
@@ -30,7 +30,7 @@ resource "aws_dynamodb_table" "events" {
   tags = var.tags
 }
 
-# Tabla: TicketOrders
+# Table: TicketOrders
 resource "aws_dynamodb_table" "ticket_orders" {
   name         = "${var.environment}-TicketOrders"
   billing_mode = "PAY_PER_REQUEST"
@@ -48,7 +48,7 @@ resource "aws_dynamodb_table" "ticket_orders" {
   tags = var.tags
 }
 
-# Tabla: TicketInventory
+# Table: TicketInventory
 resource "aws_dynamodb_table" "ticket_inventory" {
   name         = "${var.environment}-TicketInventory"
   billing_mode = "PAY_PER_REQUEST"
@@ -72,10 +72,10 @@ resource "aws_dynamodb_table" "ticket_inventory" {
 }
 
 # ============================================================================
-# SQS Queues (Solo las esenciales)
+# SQS Queues (Only essentials)
 # ============================================================================
 
-# Cola principal para órdenes
+# Main queue for orders
 resource "aws_sqs_queue" "ticket_order" {
   name                       = "${var.environment}-ticket-order-queue"
   message_retention_seconds  = 345600
@@ -92,7 +92,7 @@ resource "aws_sqs_queue" "ticket_dlq" {
   tags = var.tags
 }
 
-# Configurar DLQ
+# Configure DLQ
 resource "aws_sqs_queue_redrive_policy" "ticket_order" {
   queue_url = aws_sqs_queue.ticket_order.id
   redrive_policy = jsonencode({
@@ -102,7 +102,7 @@ resource "aws_sqs_queue_redrive_policy" "ticket_order" {
 }
 
 # ============================================================================
-# ElastiCache Redis (Simplificado)
+# ElastiCache Redis (Simplified)
 # ============================================================================
 
 resource "aws_elasticache_subnet_group" "redis" {
@@ -111,10 +111,10 @@ resource "aws_elasticache_subnet_group" "redis" {
   tags       = var.tags
 }
 
-# Redis Cluster (simplificado - single node en dev, multi-AZ en prod)
+# Redis Cluster (simplified - single node in dev, multi-AZ in prod)
 resource "aws_elasticache_replication_group" "redis" {
   replication_group_id = "${var.environment}-redis"
-  description          = "Redis para EventTicket"
+  description          = "Redis for EventTicket"
   engine               = "redis"
   engine_version       = "7.0"
   node_type           = "cache.t3.micro"
@@ -122,7 +122,7 @@ resource "aws_elasticache_replication_group" "redis" {
   subnet_group_name   = aws_elasticache_subnet_group.redis.name
   security_group_ids  = var.security_group_ids
   
-  # Simplificado: solo Multi-AZ en producción
+  # Simplified: Multi-AZ only in production
   automatic_failover_enabled = var.environment == "prod" ? true : false
   num_cache_clusters         = var.environment == "prod" ? 2 : 1
 

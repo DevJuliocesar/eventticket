@@ -77,7 +77,7 @@ sequenceDiagram
     TicketOrderController-->>Cliente: 201 Created<br/>(OrderResponse con orderId)
     deactivate TicketOrderController
     
-    Note over Cliente,SQS: Respuesta inmediata al cliente ✅
+    Note over Cliente,SQS: Respuesta inmediata al cliente 
     
     Note over SQS,ProcessTicketOrderUseCase: Fase 2: Procesamiento Asíncrono (Background)
     

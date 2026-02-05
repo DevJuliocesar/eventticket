@@ -1,5 +1,5 @@
-# Módulo de Networking
-# VPC, subnets públicas/privadas, NAT Gateway, Internet Gateway
+# Networking Module
+# VPC, public/private subnets, NAT Gateway, Internet Gateway
 
 # VPC
 resource "aws_vpc" "main" {
@@ -27,7 +27,7 @@ resource "aws_internet_gateway" "main" {
   )
 }
 
-# Subnets Públicas (para ALB)
+# Public Subnets (for ALB)
 resource "aws_subnet" "public" {
   count = length(var.azs)
 
@@ -45,7 +45,7 @@ resource "aws_subnet" "public" {
   )
 }
 
-# Subnets Privadas (para ECS tasks)
+# Private Subnets (for ECS tasks)
 resource "aws_subnet" "private" {
   count = length(var.azs)
 
@@ -62,7 +62,7 @@ resource "aws_subnet" "private" {
   )
 }
 
-# Elastic IPs para NAT Gateways
+# Elastic IPs for NAT Gateways
 resource "aws_eip" "nat" {
   count = var.enable_nat_gateway ? (var.single_nat_gateway ? 1 : length(var.azs)) : 0
 
@@ -93,7 +93,7 @@ resource "aws_nat_gateway" "main" {
   )
 }
 
-# Route Table para subnets públicas
+# Route Table for public subnets
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -110,7 +110,7 @@ resource "aws_route_table" "public" {
   )
 }
 
-# Route Table para subnets privadas
+# Route Table for private subnets
 resource "aws_route_table" "private" {
   count = var.enable_nat_gateway ? length(var.azs) : 0
 
@@ -129,7 +129,7 @@ resource "aws_route_table" "private" {
   )
 }
 
-# Asociación de Route Tables con subnets públicas
+# Route Table association with public subnets
 resource "aws_route_table_association" "public" {
   count = length(aws_subnet.public)
 
@@ -137,7 +137,7 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Asociación de Route Tables con subnets privadas
+# Route Table association with private subnets
 resource "aws_route_table_association" "private" {
   count = var.enable_nat_gateway ? length(aws_subnet.private) : 0
 

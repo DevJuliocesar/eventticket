@@ -1,39 +1,31 @@
 # ============================================================================
-# Archivo de ejemplo de variables de Terraform
+# Terraform Variables Example File
 # ============================================================================
-# Copia este archivo a terraform.tfvars y ajusta los valores según tu entorno
+# Copy this file to terraform.tfvars and adjust values according to your environment
 # ============================================================================
 
-# Entorno
+# Environment
 environment = "dev"
 
-# Región AWS
+# AWS Region
 aws_region = "us-east-1"
 
-# Aplicación
-app_name  = "eventticket"
-app_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eventticket:latest"
-app_port  = 8080
+# Application
+app_name = "eventticket"
+app_port = 8080
 
 # Networking
 vpc_cidr          = "10.0.0.0/16"
 enable_nat_gateway = true
-single_nat_gateway = false  # false = 1 NAT por AZ, true = 1 NAT compartido (más barato)
+single_nat_gateway = false  # false = 1 NAT per AZ, true = 1 shared NAT (cheaper)
 
-# App Runner Configuration (Migrado de ECS)
-apprunner_cpu           = "0.5 vCPU"  # Opciones: 0.25, 0.5, 1, 2, 4 vCPU
-apprunner_memory        = "1 GB"      # Opciones: 0.5, 1, 2, 3, 4, 6, 8, 12 GB
+# App Runner Configuration
+apprunner_cpu           = "0.5 vCPU"  # Options: 0.25, 0.5, 1, 2, 4 vCPU
+apprunner_memory        = "1 GB"      # Options: 0.5, 1, 2, 3, 4, 6, 8, 12 GB
 apprunner_min_size      = 1
 apprunner_max_size      = 10
 apprunner_max_concurrency = 100
-apprunner_auto_deploy   = true        # Auto-deploy cuando se actualiza imagen
-
-# ECS Configuration (Comentado - Mantener para referencia o rollback)
-# ecs_cpu          = 512   # 0.5 vCPU
-# ecs_memory       = 1024  # 1 GB
-# ecs_desired_count = 2
-# ecs_min_capacity = 1
-# ecs_max_capacity = 10
+apprunner_auto_deploy   = true        # Auto-deploy when image is updated
 
 # Logging
 log_retention_days = 7
